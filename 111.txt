@@ -288,3 +288,468 @@ clsBuppinDialog dlgG32Z040010_07 {
 		}
 	}
 }
+
+
+\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\\
+
+/* eslint-disable */
+import { useEffect, useState } from "react";
+import PkgBasicParts from "../../../common/PkgBasicParts";
+import PkgHttp from "../../../common/PkgHttp";
+import PkgKakuchoParts from "../../../common/PkgKakuchoParts";
+import PkgGlobal from "../../../conf/PkgGlobal";
+import { BaseDialogProps, ButtonOnClickEvent, FormItemOnChangeEvent } from "../../../common/PkgType";
+import MockupJson from "../../../mockup/300000/32Z/DlgG32Z040010_01.json";
+import PkgMessage from "../../../common/PkgMessage";
+import PkgScreenControl from "../../../common/PkgScreenControl";
+import PkgCheck from "../../../common/PkgCheck";
+
+const DlgG32Z040010_01 = {
+
+  Dialog: ({ props }: DlgG32Z040010_01Props) => {
+    /** 画面ID  */
+    const GID = "G32Z040010_01";
+    /** 画面Version */
+    const GVER = "1.0";
+    /** 詳細処理ID　初期処理） */
+    const SYOKI_SYORI = "32Z040010";
+
+    /* 実行処理(初回)フラグ True:初回 False:初回ではない ; */
+    let initExecuteFlg = true;
+
+    /* 所内所外が設定されていたかどうかを確認する ; */
+    let noSettingSgisniFlg = false;
+
+
+    // コード一覧
+    /*
+    @[概要]:画面の初期化;
+    @[詳細]:画面を初期化する。;
+    @[備考]:;
+    @[引数]:なし;
+    @[戻値]:なし;
+    */
+    useEffect(() => {
+      PkgBasicParts.setDisabled("btnOkG32Z040010_01", true);
+    }, []);
+    const [list, setList] = useState({
+      src: [] as string[][],
+      selectedIndex: -1,
+      setSelectedIndex: (i: number) =>
+        setList((l) => ({ ...l, selectedIndex: i })),
+    });
+
+    const [form, setForm] = useState({
+      sksCd: "",
+      ittsCd: "",
+      ittbksCd: "",
+      fukaFlg: "",
+      sgisniFlg: "",
+      optSgisniFlgOpt: "",
+       /*初期表示フラグ True:初期処理 False:初期処理ではない */
+       initFlg: true,
+
+    });
+    const optSgisniFlgOptBtn = [
+      ["2", "所内"],
+      ["1", "所外"]
+    ];
+
+    /**
+  * @[概要]コントロール要素-値変更イベント;
+  */
+    const handleForm = (ev: FormItemOnChangeEvent) => {
+      setForm(f => ({ ...f, [ev.target.name]: ev.target.value }));
+    };
+    /**
+        @[概要]:オプションアイテム選択時の処理;
+        @[詳細]:遷移元の画面に選択レコード情報を設定する。;
+        @[備考]:;
+        @[引数]:e イベントオブジェクト;
+        @[戻値]:なし;
+        */
+        const handleOptSgisniFlgOpt = async (ev: FormItemOnChangeEvent) => {
+          try {
+             /* 初期表示の場合、処理を行いません */
+            if (!form.initFlg) {
+              /* 入力パラメタを設定する */
+              setForm(f => ({ ...f, optSgisniFlgOpt: _getSnisgiKbn(ev.target.value) }));
+              _initScreen();
+              /* 検索処理を実行します */
+              await _syokisyori();
+            }
+          } catch (e) {
+            PkgMessage.putException(e, "handleOptSgisniFlgOpt");
+            PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+          }
+        }
+
+    /**
+   * モックアップ用
+   */
+    const mockup = () => {
+      PkgKakuchoParts.setDialogTitle(GVER, GID);
+      setList((l) => ({ ...l, ...MockupJson.listSearchResult }));
+      setForm(f => ({ ...f, ...MockupJson.form }));
+    };
+
+    /*
+    @[概要]:入力値の妥当性チェックを行う;
+    @[詳細]:入力値の妥当性チェックを行う。;
+    @[備考]:;
+    @[引数]:なし;
+    @[戻値]:$TRUE エラーなし $FALSE エラー発生;
+    */
+    const validate = () => {
+      try {
+        /* 施工組織コード */
+        if (PkgCheck.chkInput(props.sksCd) === false) {
+          PkgMessage.putMessageBox("NNCW0115", ["施工組織コード"]);
+          return false;
+        }
+        /* 使用不可フラグ */
+        if (PkgCheck.chkInput(props.fukaFlg) === false) {
+          PkgMessage.putMessageBox("NNCW0115", ["使用不可フラグ"]);
+          return false;
+        }
+        return true;
+      } catch (e) {
+        PkgMessage.putException("e", "onShow");
+        PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+      }finally {
+         // スピナー非表示
+        PkgScreenControl.switchLoadingSpinner(false);
+      }
+    };
+
+    /**
+     * @[概要]表示時イベント
+     * @[詳細]パラメタをチェックする; パラメタを設定する;  検索処理を実行する;
+     */
+    const onShow = async () => {
+      try {
+        if (!validate()) {
+          props.setShow(false);
+          return;
+        }
+        PkgKakuchoParts.setDialogTitle(GVER, GID);
+        if (props.sgisniFlg === "1") {
+          /* 1:所外 */
+          setForm(f => ({ ...f, optSgisniFlgOpt: "1" }));
+          PkgBasicParts.setDisabled(["optSgisniFlgOpt_1", "optSgisniFlgOpt_2"], true);
+          noSettingSgisniFlg = false;
+          form.optSgisniFlgOpt = "1";
+        } else if (props.sgisniFlg === "2") {
+          /* 2:所内 */
+          setForm(f => ({ ...f, optSgisniFlgOpt: "2" }));
+          PkgBasicParts.setDisabled(["optSgisniFlgOpt_1", "optSgisniFlgOpt_2"], true);
+          noSettingSgisniFlg = false;
+          form.optSgisniFlgOpt = "2";
+        } else {
+          /* パラメタが設定されていない場合、デフォルト2:所内に設定する */
+          setForm(f => ({ ...f, optSgisniFlgOpt: "2" }));
+          PkgBasicParts.setDisabled(["optSgisniFlgOpt_1", "optSgisniFlgOpt_2"], false);
+          noSettingSgisniFlg = true;
+          form.optSgisniFlgOpt = "2";
+        }
+          _initScreen();
+          /* 検索処理を実行します */
+          await _syokisyori();
+          /* 初期表示の場合 */
+          setForm(f => ({ ...f, initFlg: false }));
+        } catch (e) {
+          PkgMessage.putException(e, "onShow");
+          PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+        }
+      };
+       
+      const _syokisyori = async () => {
+        try {
+          // スピナー表示
+          await PkgScreenControl.switchLoadingSpinner(true);
+
+        /* 上り電文設定 */
+        const aryNobori = {
+          SKS_CD: props.sksCd,
+          SGISNI_FLG: form.optSgisniFlgOpt,
+          ITTS_CD: props.ittsCd,
+          ITTBKS_CD: props.ittbksCd,
+          FUKA_FLG: props.fukaFlg,
+        };
+
+        type kudari_t = {
+          RESULT_LIST: string[][];
+        };
+
+        /* サーバ問合せ */
+        const rslt = await PkgHttp.callGateway<kudari_t>(SYOKI_SYORI, aryNobori);
+        
+        // 処理結果による分岐
+        if (rslt.RESULT === PkgHttp.Result.BUSINESS_ERROR) {
+          /* システムエラーの場合 */
+          PkgMessage.putMessageBox("NNCW0007", [""]);
+          PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+          /* 初期処理の場合、画面を表示しない。 */
+          props.setShow(false);
+        }else if (rslt.RESULT === PkgHttp.Result.SYSTEM_ERROR) {
+          // 業務エラーの場合
+          const messageId = rslt.MESSAGE_ID;
+          // フォーカスの設定
+          PkgBasicParts.focus("btnCancelG32Z040010_01");
+          PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+          if (messageId === "NNCW0007") {
+            PkgMessage.putMessageBox(messageId, [""]);
+            if (initExecuteFlg && !noSettingSgisniFlg) {
+              /* 初期処理の場合、画面を表示しない。 */
+              props.setShow(false);
+            }
+          }
+        }else if (rslt.RESULT === PkgHttp.Result.SUCCESS) {
+          /* データを取得に成功した場合 */
+          /*初期選択レコード */
+          let selected_index = 0;
+          if (props.sksCd && props.ittbksCd) {
+            // 下り電文から一致する行を検索
+            rslt.BUSINESS_DATA.RESULT_LIST.forEach((rec: string[], i: number) => {
+             if (rec[0] === props.sksCd && rec[2] === props.ittbksCd){
+                return (selected_index = i);
+              }
+            });
+          }
+          // リストを表示
+          setList((l) => ({
+            ...l,
+            src: rslt.BUSINESS_DATA.RESULT_LIST.map((rec: string[]) => [
+              rec[0],
+              rec[1],
+              rec[2],
+              rec[3],
+            ]),
+            selectedIndex: selected_index,
+          }));
+          /* OKボタンを活性化する */
+          PkgBasicParts.setDisabled("btnOkG32Z040010_01", false);
+        }
+
+        /* 実行処理(初回)フラグをOFFにします */
+        initExecuteFlg = false;
+
+      } catch (e) {
+        PkgMessage.putException("e", "onShow");
+        PkgScreenControl.lockDialog("btnCancelG32Z040010_01");
+      }finally {
+        // スピナー非表示
+        await PkgScreenControl.switchLoadingSpinner(false);
+      }
+    };
+
+    /**
+     * リストが更新されたときにスクロールを選択行に移動
+     */
+    useEffect(() => {
+      // スクロールを選択行に移動（-1にしないとstickyの陰に隠れてしまう）
+      (
+        document.getElementById("tbG32Z040010_01")?.childNodes[1]?.childNodes[
+        list.selectedIndex - 1
+        ] as HTMLElement
+      )?.scrollIntoView();
+    }, [list.src]);
+
+    /**
+     * @[概要]OKボタン押下
+     * @param {*} ev
+     *  YOUS_CD: string; // 要求組織コード
+     *  SSM: string; // 要求組織名
+     * YSSBKS_CD: string; //  要求物管者コード
+     *  KJIBKS: string; //  記事（物管者）
+     */
+    const btnOkG32Z040010_01OnClick =  async (ev: ButtonOnClickEvent) => {
+      try {
+        const args = {
+          YOUS_CD: list.src[list.selectedIndex][0],
+          SSM: list.src[list.selectedIndex][1],
+          YSSBKS_CD: list.src[list.selectedIndex][2],
+          KJIBKS: list.src[list.selectedIndex][3],
+        };
+        // 呼び出し元のボタン押下イベントを発行
+        props.btnOkClickEvent(ev, args);
+        // ダイアログを閉じる
+        props.setShow(false);
+      } catch (e) {
+        PkgMessage.putException(e, "btnOkG32Z040010_01OnClick");
+        PkgScreenControl.lockDialog("G32Z040010_01");
+      }
+    };
+
+    /**
+     * @[概要]キャンセルボタン押下
+     *  {*} e イベントオブジェクト
+     */
+    const btnCancelG32Z040010_01OnClick = async () => {
+      try {
+        props.setShow(false);
+      } catch (e) {
+        PkgMessage.putException(e, "btnCancelG32Z040010_01OnClick");
+        PkgScreenControl.lockDialog("G32Z040010_01");
+      }
+    };
+
+    /**
+      @[概要]:所内所外区分を返します;
+      @[詳細]:指定されたoptionValueを判定し所内所外区分の値を返します;
+      @[備考]:;
+      @[引数]:optionValue オプションボタンValue;
+      @[戻値]:所内所外区分 1: 所外 2:所内;
+      */
+      const _getSnisgiKbn = (optionValue: string) => {
+          /* 画面を初期化します */
+          if (optionValue === "2") {
+            form.optSgisniFlgOpt = "2";
+            return optionValue;
+          } else {
+            /* 1:所外を設定する */
+            form.optSgisniFlgOpt = "1";
+            return optionValue;
+          }
+      }
+
+    /**
+      @[概要]:画面の初期化;
+      @[詳細]:画面を初期化する。;
+      @[備考]:;
+      @[引数]:なし;
+      @[戻値]:なし;
+        */
+      const _initScreen = () => {
+        /* 画面を初期化します */
+        PkgBasicParts.setDisabled("btnOkG32Z040010_01", true);
+        setList((l) => ({ ...l, src: [] }));
+      }
+
+    // フッターボタン群
+    const footerButtons = [
+      { id: "btnOkG32Z040010_01", text: "Ｏ　Ｋ", onClick: btnOkG32Z040010_01OnClick },
+      { id: "btnCancelG32Z040010_01", text: "キャンセル", onClick: btnCancelG32Z040010_01OnClick, },
+    ];
+
+    return (
+      <PkgKakuchoParts.ClsDialog
+        show={props.show}
+        onShow={PkgGlobal.MOCKUP_MODE ? mockup : onShow}
+      >
+        <PkgKakuchoParts.ClsDialogHeader title="要求組織物管者コード" />
+        <PkgKakuchoParts.ClsDialogMain>
+          <div className="col-4" >
+            <PkgBasicParts.ClsBaseGroupBox
+              style={{ marginLeft: 10, position: "relative" }}
+            >
+              <div style={{ position: "absolute", top: -12, left: 5, backgroundColor: "var(--body-background-color)" }}>
+                <PkgBasicParts.ClsBaseLabel
+                  value="所内所外区分選択"
+                  width={PkgBasicParts.getWidth.Label(16)}
+                />
+              </div>
+
+              <div className='form-item' style={{ marginTop: 10 }}>
+                <div className="form-item">
+                  <span className='form-item'>
+                    <PkgBasicParts.ClsBaseOptionButton
+                      id='optSgisniFlgOpt'
+                      name='optSgisniFlgOpt'
+                      width={PkgBasicParts.getWidth.OptionButton(6)}
+                      option={optSgisniFlgOptBtn[0]}
+                      valueIndex={0}
+                      displayIndex={1}
+                      tabIndex={1}
+                      value={form.optSgisniFlgOpt}
+                      onChange={(ev) => {
+                        handleForm(ev);
+                        handleOptSgisniFlgOpt(ev);
+                      }}
+                    />
+                  </span>
+
+                  <span className='form-item'>
+                    <PkgBasicParts.ClsBaseOptionButton
+                      id='optSgisniFlgOpt'
+                      name='optSgisniFlgOpt'
+                      width={PkgBasicParts.getWidth.OptionButton(6)}
+                      option={optSgisniFlgOptBtn[1]}
+                      valueIndex={0}
+                      displayIndex={1}
+                      tabIndex={1}
+                      value={form.optSgisniFlgOpt}
+                      onChange={(ev) => {
+                        handleForm(ev);
+                        handleOptSgisniFlgOpt(ev);                          
+                        }}
+                    />
+                  </span>
+                </div>
+              </div>
+            </PkgBasicParts.ClsBaseGroupBox>
+          </div>
+          <PkgKakuchoParts.ClsDialogMain>
+            <PkgBasicParts.ClsBaseFlexView id="tblG22BZ4E010_01" height={310}>
+              <PkgBasicParts.ClsBaseFlexHeader
+                columns={[
+                  {
+                    width: PkgBasicParts.getWidth.TextBox(14),
+                    title: "要求組織コード",
+                  },
+                  {
+                    width: PkgBasicParts.getWidth.TextBox(30),
+                    title: "要求組織名",
+                  },
+                  {
+                    width: PkgBasicParts.getWidth.TextBox(16),
+                    title: "要求物管者コード",
+                  },
+                  {
+                    width: PkgBasicParts.getWidth.TextBox(60),
+                    title: " 記事（物管者）",
+                  },
+                ]}
+              />
+              <PkgBasicParts.ClsBaseFlexBody
+                src={list.src}
+                selectedIndex={list.selectedIndex}
+                setSelectedIndex={list.setSelectedIndex}
+              >
+                <PkgBasicParts.ClsBaseFlexLabel valueIndex={0} />
+                <PkgBasicParts.ClsBaseFlexLabel valueIndex={1} />
+                <PkgBasicParts.ClsBaseFlexLabel valueIndex={2} />
+                <PkgBasicParts.ClsBaseFlexLabel valueIndex={3} />
+              </PkgBasicParts.ClsBaseFlexBody>
+            </PkgBasicParts.ClsBaseFlexView>
+          </PkgKakuchoParts.ClsDialogMain>
+        </PkgKakuchoParts.ClsDialogMain>
+
+        <PkgKakuchoParts.ClsDialogFooter buttons={footerButtons} />
+      </PkgKakuchoParts.ClsDialog>
+    );
+  },
+};
+export default DlgG32Z040010_01;
+
+export type DlgG32Z040010_01Props = {
+  props: BaseDialogProps & {
+    btnOkClickEvent: ButtonOnClickEvent;
+    sksCd: string; //施工組織コード
+    sgisniFlg: string; //所外所内フラグ
+    ittsCd: string; // 委託元組織コード
+    ittbksCd: string; //委託元物管者コード
+    fukaFlg: string; //使用不可フラグ
+  };
+};
+
+export type DlgG32Z040010_01Args = {
+  /** 要求組織コード */
+  YOUS_CD: string;
+  /**要求組織名 */
+  SSM: string;
+  /**要求者コード */
+  YSSBKS_CD: string;
+  /**記事(物管者) */
+  KJIBKS: string;
+};
