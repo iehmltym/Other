@@ -1,1 +1,290 @@
 
+/* 共通パッケージインポート; */
+import "../bizcommon/pkgBuppinCommonFunction.crs"
+import "../bizcommon/pkgBuppinKakuchoParts.crs"
+import "../../../common/pkgHttp.crs";
+import "../../../common/pkgMessage.crs";
+import "../../../common/pkgCheck.crs";
+
+/* @[概要]:装置名種別ダイアログ; */
+clsBuppinDialog dlgG32Z040010_07 {
+
+	/* @[概要]:起動画面ボタン名称; */
+	String btnNm;
+	
+	/* @[概要]:使用不可フラグ; */
+	String fukaFlg;
+	
+	/*
+	@[概要]:パラメタ設定用ファンクション;
+	@[詳細]:パラメタを設定する。;
+	@[備考]:;
+	@[引数]:btnNm 起動画面ボタン名称;
+	@[引数]:fukaFlg 使用不可フラグ;
+	@[戻値]:なし;
+	*/
+	Function SetParam(btnNm, fukaFlg) {
+		this.btnNm = (btnNm == null) ? "" : btnNm;
+		this.fukaFlg = (fukaFlg == null) ? "" : fukaFlg;
+		
+		/************デバッグ**************/
+		pkgLog.log( "***********パラメタ設定" );
+		pkgLog.log( "起動画面ボタン名称：" + this.btnNm);
+		pkgLog.log( "使用不可フラグ：" + this.fukaFlg);
+		/*********************************/
+		
+	}
+	
+	
+	/*
+	@[概要]:入力値の妥当性チェックを行う;
+	@[詳細]:入力値の妥当性チェックを行う。;
+	@[備考]:;
+	@[引数]:なし;
+	@[戻値]:$TRUE エラー発生 $FALSE エラーなし;
+	*/
+	Function validate() {
+		/* サーバサイドに処理を実行する */
+		/* MessageBox("サーバサイドに処理を実行する"); */
+		try{
+			
+			/* 項目別妥当性チェック */
+			
+			/* 使用不可フラグ */
+			if ( pkgCheck.chkInput( this.fukaFlg ) == $FALSE ) {
+				/* 必須チェック */
+				String args[1];
+				args[0] = "使用不可フラグ";
+				pkgMessage.putMessageBox("NNCW0115", args, this);
+				return $TRUE;
+			}
+			
+		} catch (e) {
+			pkgMessage.putException(e, this.Name);
+		}
+		
+		return $FALSE;
+	}
+	
+	/*
+	@[概要]:サーバサイドに処理を実行する;
+	@[詳細]:サーバサイドに処理を実行する。;
+	@[備考]:;
+	@[引数]:なし;
+	@[戻値]:なし;
+	*/
+	Function execute() {
+		/* サーバサイドに処理を実行する */
+		/* MessageBox("サーバサイドに処理を実行する"); */
+		try{
+			
+			/* 入力チェックを行います */
+			if ( this.validate() == $TRUE ) {
+				/* 画面を閉じる */
+				this.Delete();
+				return;
+			}
+			
+			/* 上り電文設定 */
+			var aryNobori = new Array();
+			aryNobori["FUKA_FLG"] = this.fukaFlg;
+			
+			/* サーバ問合せ */
+			var rcdKudari = pkgHttp.callGateway("32Z040070", aryNobori);
+			
+			if( rcdKudari.result == pkgHttp.Result.SYSTEM_ERROR ){
+				/* システムエラーの場合 */
+				pkgScreenControl.lockScreen(this.frmG32Z040010_07);
+				/* 画面を閉じる */
+				this.Delete();
+				
+			} else if( rcdKudari.result == pkgHttp.Result.BUSINESS_ERROR ) {
+				/* 業務エラーの場合 */
+				var messageId = rcdKudari.msgId;
+				if( messageId == "NNCW0007" ){
+					pkgMessage.putMessageBox(messageId, null, this);
+					this.frmG32Z040010_07.btnOK.Active = $FALSE;
+					this.Delete();
+				}
+				
+			} else if( rcdKudari.result == pkgHttp.Result.SUCCESS ) {
+				/* データを取得に成功した場合 */
+				var listData = new CSVDocument();
+				/* フレックスビューにデータを設定する */
+				listData = pkgHttp.convertResponseList( rcdKudari.businessData["LIST_DATA"]);
+				this.frmG32Z040010_07.flxStm << listData;
+				/* OKボタンを活性化する */
+				this.frmG32Z040010_07.btnOK.Active = $TRUE;
+			}
+		} catch (e) {
+			pkgMessage.putException(e, this.Name);
+		}
+	}
+	
+	/* @[概要]:ダイアログ用基本フォーム; */
+	clsBuppinSekoDialog frmG32Z040010_07 {
+		
+		/**************************************************************************
+			変数定義
+		***************************************************************************/
+		
+		Width = 278;
+		Height = 392;
+		
+		/* @[概要]:画面ID; */
+		String GID = "G32Z040010_07";
+		
+		/* @[概要]:画面Ver */
+		String GVER = "5.0";
+		
+		
+		/**************************************************************************
+			画面ヘッダ情報定義
+		***************************************************************************/
+		
+		/* 「画面タイトルラベル」 */
+		this.lblTitle.Value = "装置名種別参照";
+		
+		/* 「ウィンドウタイトル」 */
+		this.setWindowTitle(GVER, GID);
+		
+		/**************************************************************************
+			画面オブジェクト定義
+		***************************************************************************/
+		
+		/* @[概要]:装置名種別検索フレックスビュー; */
+		clsBuppinFlexView flxStm {
+			/* X：10pixel（固定） */
+			X = 10;
+			/* Y：ヘッダ情報(間仕切り線（上）+ 13pixel) */
+			Y = 35 + 13;
+			/* 幅：フレックスビューオブジェクトサイズの合計 */
+			Width = 258;
+			/* 高さ：フォーム高さ - ヘッダ情報(間仕切り線（上）+ 13pixel) - フッタ情報(間仕切り線（下）+ 8pixel) */
+			Height = ^.Height -(35 + 13) - (32 + 8);
+			VScroll = $STATIC;
+			HScroll = $NONE;
+			
+			/* @[概要]:装置名種別検索フレックスレコード; */
+			this.flxRecord{
+				
+				/* @[概要]:装置名種別; */
+				clsBuppinFlexLabel flbStmcls{
+					Title = "装置名種別";
+					pkgBuppinCommonFunction.setWidth(10,flbStmcls);
+					BorderStyle = $SUNKEN;
+				}
+				
+				/* @[概要]:装置名種別名; */
+				clsBuppinFlexLabel flbStmsbm{
+					Title = "装置名種別名";
+					pkgBuppinCommonFunction.setWidth(20,flbStmsbm);
+					BorderStyle = $SUNKEN;
+				}
+			}
+		}
+		
+		/* @[概要]:ボタン名： Ｏ　Ｋ; */
+		clsBuppinKinouButton btnOk {
+			Title = pkgBuppinPartsGlobal.KBTN_NM_OK;
+			
+			/*
+			@[概要]:Ｏ　Ｋボタン押下処理;
+			@[詳細]:遷移元の画面に選択レコード情報を設定する。;
+			@[備考]:;
+			@[引数]:e イベントオブジェクト;
+			@[戻値]:なし;
+			*/
+			Function OnTouch( e ) {
+				
+				try{
+					/* 現在選択しているレコードを取得 */
+					var record = ^.flxStm.GetRow( ^.flxStm.RowPosition );
+					/* ダイアログイベント生成 */
+					var dialogEvent = new clsBuppinDialogEvent() {
+						/* ダイアログID */
+						String dialogId;
+						/* 起動画面ボタン名称 */
+						String btnNm;
+						/* 装置名種別 */
+						String stmcls;
+						/* 装置名種別名 */
+						String stmsbm;
+					}
+					
+					/* 呼出元のフォーム画面に渡すデータセット */
+					dialogEvent.dialogId = ^.^.name;
+					dialogEvent.btnNm = ^.^.btnNm;
+					dialogEvent.stmcls = record.flbStmcls.Value;
+					dialogEvent.stmsbm = record.flbStmsbm.Value;
+					
+					/* ダイアログイベント発行 */
+					PostEvent(dialogEvent);
+					
+					/* ダイアログ消去 */
+					^.^.Delete();
+					
+				} catch (e) {
+					/* 例外メッセージを表示 */
+					pkgMessage.putException(e, name);
+					/* 全コントロールをロック */
+					pkgScreenControl.lockScreen(dlgG32Z040010_07);
+				}
+			}
+		}
+		
+		
+		/*
+		@[概要]:キャンセルボタン;
+		*/
+		clsBuppinKinouButton btnCancel {
+			Title = pkgBuppinPartsGlobal.KBTN_NM_CANCEL;
+			
+			/*
+			@[概要]:キャンセルボタン押下処理;
+			@[詳細]:画面を閉じる。;
+			@[備考]:;
+			@[引数]:e イベントオブジェクト;
+			@[戻値]:なし;
+			*/
+			Function OnTouch( e ) {
+				/* OnTouch イベントハンドラ */
+				try{
+					/* 呼び出し元画面へ遷移 */
+					^.^.Delete();
+					
+				} catch (e) {
+					/* 例外メッセージを表示 */
+					pkgMessage.putException(e, name);
+					/* 全コントロールをロック */
+					pkgScreenControl.lockScreen(dlgG32Z040010_07);
+				}
+			}
+		}
+		
+		/**************************************************************************
+			画面オブジェクト配置処理：
+			【メモ】 初期処理の中ではなく、ここに記述しないと、BizDesinerのデザインレイアウト
+				で画面を確認するときにレイアウトが崩れます。
+		***************************************************************************/
+		
+		/* フッタ情報 */
+		
+		/* 「機能領域ボタン」群配列を定義する */
+		var btnList = new Array;
+		btnList[0] = btnOk;
+		btnList[1] = btnCancel;
+		
+		
+		/* 「機能領域ボタン」群を設定する */
+		pkgBuppinCommonFunction.setDialogKinouBtnPosition(btnList, frmG32Z040010_07.Height);
+		
+		/**************************************************************************
+			初期処理：
+			【注意】 初期処理で使用するオブジェクトが、上部で定義されていることが前提となります
+		***************************************************************************/
+		if ( !$DESIGNTIME ) {
+			/* ここに初期化処理を記述してください */
+		}
+	}
+}
