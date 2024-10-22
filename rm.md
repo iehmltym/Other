@@ -1,109 +1,160 @@
-import React from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import PkgBasicParts from '../../../common/PkgBasicParts';
-import PkgHttp from '../../../common/PkgHttp';
+import React, { useEffect, useState } from 'react';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { BaseDialogProps } from '../../../common/PkgType';
 import PkgMessage from '../../../common/PkgMessage';
 import PkgScreenControl from '../../../common/PkgScreenControl';
-import { BaseDialogProps, ButtonOnClickEvent } from '../../../common/PkgType';
+import PkgHttp from '../../../common/PkgHttp';
 
-const DlgG316020040_07 = {
-  Dialog: ({ props }: DlgG316020040_07Props) => {
-    /** 画面ID */
-    const GID = "G316020040_07";
-    /** 画面Version */
-    const GVER = "1.0";
+// 検索結果のインターフェース
+interface SearchResult {
+  tekiokubn: string;      // 適応区分
+  tekiokubnnm: string;    // 適応区分名称
+  setubisaibunnm: string; // 設備細分名
+  tekiyonendo: string;    // 適応年度
+  kikankaisi: string;     // 期間開始
+  kikanryo: string;       // 期間終了
+}
 
-    // モックアップデータ
-    const mockData = {
-      tekiokubn: "優遇税制適応区分テスト",
-      tekiokubnnm: "区分名称テスト",
-      setubisaibunnm: "対象設備名称テスト",
-      tekiyonendo: "2024",
-      kikankaisi: "2024-04-01",
-      kikanryo: "2025-03-31"
-    };
+interface DlgG316020040_07Props extends BaseDialogProps {
+  onConfirm?: () => void;
+  kensakuJouken?: {
+    setubi: string;      // 設備
+    syumoku: string;     // 種目
+    saimoku: string;     // 細目
+    saibun: string;      // 細分
+    seiri_cd: string;    // 整理コード
+  };
+}
 
-    /**
-     * OKボタン押下時の処理
-     */
-    const handleOkClick = async (ev: ButtonOnClickEvent) => {
-      try {
-        // ダイアログを閉じる
-        props.setShow(false);
-        if (props.btnOkClickEvent) {
-          props.btnOkClickEvent(ev);
-        }
-      } catch (e) {
-        PkgMessage.putException(e, "handleOkClick");
-        PkgScreenControl.lockDialog(GID);
+const DlgG316020040_07 = ({ 
+  show = false, 
+  setShow,
+  onConfirm,
+  kensakuJouken 
+}: DlgG316020040_07Props) => {
+  // 検索結果のstate
+  const [searchData, setSearchData] = useState<SearchResult | null>(null);
+  // ローディング状態
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+
+  // 本体内訳名の検索処理
+  const commonRequest = async () => {
+    try {
+      setIsLoading(true);
+      
+      // 検索パラメータの設定
+      const params = {
+        SETUBI: kensakuJouken?.setubi || "",
+        SYUMOKU: kensakuJouken?.syumoku || "",
+        SAIMOKU: kensakuJouken?.saimoku || "",
+        SAIBUN: kensakuJouken?.saibun || "",
+        SEIRI_CD: kensakuJouken?.seiri_cd || ""
+      };
+
+      // サーバー呼び出し
+      const response = await PkgHttp.callGateway<any>("316020040", params);
+
+      if (response.RESULT === PkgHttp.Result.SUCCESS) {
+        setSearchData({
+          tekiokubn: response.BUSINESS_DATA.TEKIOKUBN,
+          tekiokubnnm: response.BUSINESS_DATA.TEKIOKUBNNM,
+          setubisaibunnm: response.BUSINESS_DATA.SETUBISAIBUNNM,
+          tekiyonendo: response.BUSINESS_DATA.TEKIYONENDO,
+          kikankaisi: response.BUSINESS_DATA.KIKANKAISI,
+          kikanryo: response.BUSINESS_DATA.KIKANRYO
+        });
+      } else if (response.RESULT === PkgHttp.Result.BUSINESS_ERROR) {
+        PkgMessage.putMessageBox(response.MESSAGE_ID, [response.MESSAGE]);
+        setShow(false);
+      } else {
+        PkgScreenControl.lockDialog('DlgG316020040_07');
+        setShow(false);
       }
-    };
+    } catch (error) {
+      PkgMessage.putException(error, 'commonRequest');
+      PkgScreenControl.lockDialog('DlgG316020040_07');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
-    // フッターボタン定義
-    const footerButtons = [
-      { 
-        id: "btnOkG316020040_07", 
-        text: "Ｏ　Ｋ", 
-        onClick: handleOkClick,
-      }
-    ];
+  // ダイアログ表示時に検索実行
+  useEffect(() => {
+    if (show) {
+      commonRequest();
+    }
+  }, [show]);
 
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-        <Card className="w-[608px]">
-          <CardHeader>
-            <CardTitle>優遇税制参照</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            <div className="space-y-4">
-              <div className="flex items-center">
-                <span className="w-24 text-right mr-2">適応区分:</span>
-                <div className="flex-1 p-2 bg-gray-100 min-h-[30px]">
-                  {mockData.tekiokubn}
-                </div>
-              </div>
+  // OK button handler
+  const handleConfirm = () => {
+    try {
+      onConfirm?.();
+      setShow(false);
+    } catch (error) {
+      PkgMessage.putException(error, 'handleConfirm');
+      PkgScreenControl.lockDialog('DlgG316020040_07');
+    }
+  };
 
-              <div className="flex items-center">
-                <span className="w-24 text-right mr-2">適応区分名称:</span>
-                <div className="flex-1">
-                  {mockData.tekiokubnnm}
-                </div>
-              </div>
+  return (
+    <Dialog open={show} onOpenChange={setShow}>
+      <DialogContent className="sm:max-w-[608px] bg-[#F0F0F0]"> {/* 背景色を図2に合わせる */}
+        <DialogHeader>
+          <DialogTitle className="text-base font-normal">優遇税制参照</DialogTitle>
+        </DialogHeader>
 
-              <div className="flex items-center">
-                <span className="w-24 text-right mr-2">設備細分名:</span>
-                <div className="flex-1 p-2 bg-gray-100 min-h-[30px]">
-                  {mockData.setubisaibunnm}
-                </div>
-              </div>
-
-              <div className="flex items-center">
-                <span className="w-24 text-right mr-2">適応年度:</span>
-                <div className="flex-1">
-                  {`${mockData.tekiyonendo}年度（${mockData.kikankaisi}～${mockData.kikanryo}）`}
-                </div>
+        {isLoading ? (
+          <div className="flex justify-center py-4">読み込み中...</div>
+        ) : (
+          <div className="space-y-4 py-4">
+            {/* 適応区分 */}
+            <div className="flex items-start space-x-4">
+              <span className="w-24 text-right pt-2">適応区分:</span>
+              <div className="flex-1 p-2 bg-white border min-h-[30px]"> {/* 白背景と境界線を追加 */}
+                {searchData?.tekiokubn || ''}
               </div>
             </div>
 
-            <div className="flex justify-start mt-4">
-              <button
-                className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                onClick={handleOkClick}
-              >
-                Ｏ　Ｋ
-              </button>
+            {/* 適応区分名称 */}
+            <div className="flex items-start space-x-4">
+              <span className="w-24 text-right pt-2">適応区分名称:</span>
+              <div className="flex-1 py-2">
+                {searchData?.tekiokubnnm || ''}
+              </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
+
+            {/* 設備細分名 */}
+            <div className="flex items-start space-x-4">
+              <span className="w-24 text-right pt-2">設備細分名:</span>
+              <div className="flex-1 p-2 bg-white border min-h-[30px]">
+                {searchData?.setubisaibunnm || ''}
+              </div>
+            </div>
+
+            {/* 適応年度 */}
+            <div className="flex items-start space-x-4">
+              <span className="w-24 text-right pt-2">適応年度:</span>
+              <div className="flex-1 py-2">
+                {searchData?.tekiyonendo && 
+                  `${searchData.tekiyonendo}年度（${searchData.kikankaisi}～${searchData.kikanryo}）`
+                }
+              </div>
+            </div>
+          </div>
+        )}
+
+        <div className="flex justify-start mt-4">
+          <button
+            onClick={handleConfirm}
+            className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+            disabled={isLoading}
+          >
+            Ｏ　Ｋ
+          </button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default DlgG316020040_07;
-
-export type DlgG316020040_07Props = {
-  props: BaseDialogProps & {
-    btnOkClickEvent?: ButtonOnClickEvent;
-  };
-};
