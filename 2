@@ -1,0 +1,4680 @@
+package jp.co.nttcom.nn.business.n5.n531.n5316020.logic;
+
+import java.io.ByteArrayInputStream;
+import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import jp.co.nttcom.nn.base.cm.report.ReportCreator;
+import jp.co.nttcom.nn.base.util.DateUtil;
+import jp.co.nttcom.nn.base.util.FileIoUtil;
+import jp.co.nttcom.nn.base.util.SystemUtil;
+import jp.co.nttcom.nn.business.n5.common.N5300000_CommonLogic;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budbut01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budbutmak01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budbykcls01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budjgukbn01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budkpohoh01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budmngkbn01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budsnikos01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budstmcls01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budtskblc01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budzog01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buibutkrykmg01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buibutkryser01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5BuibututkForIkkatusyusei01DTO;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buikss01DTO;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buiyzsmt01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Skifkj01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5UtiwakeKensaku01DTO;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buibutuwkbkj01DTO;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buikss01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Skdbilcd01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Skduntcd01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Skiskj01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Budtnkkun01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buibyk01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buitzk01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buiutw01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buismj01Entity;
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Buiuhj01Entity;
+// 2017.12.08 ９次２期開発 追加 START
+import jp.co.nttcom.nn.business.n5.n531.entity.N5Edirenkei01Entity;
+// 2017.12.08 ９次２期開発 追加 END
+import jp.co.nttcom.scorpion.bean.Message;
+import jp.co.nttcom.scorpion.business.logic.AbstractBusinessLogic;
+import jp.co.nttcom.scorpion.exception.BusinessException;
+import jp.co.nttcom.scorpion.exception.ResourceBusyException;
+import jp.co.nttcom.scorpion.exception.SystemException;
+import jp.co.nttcom.scorpion.exception.UniqueKeyException;
+
+import org.apache.commons.lang3.StringUtils;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
+
+/**
+ * <p>[システム名] グループ共通IT(施工管理)</p>
+ * <p>[サブシステム名] 一般計画工事</p>
+ * <p>[業務名] 所内内訳書作成</p>
+ * <p>[プログラム名] 所内内訳書作成</p>
+ * <p>[プログラムID] 316020</p>
+ * <p>[会社識別] 共通<p>
+ * <p>[概 要] 所内内訳書作成ロジック</p>
+ * <p>[詳 細] 所内内訳書作成に連なる一連の処理を行うロジッククラス。</p>
+ * <p>[備 考] </p>
+ * <p>[環 境] OracleJDK 1.8.0_102</p>
+ * @since 2.0
+ * <p>Copyright(c) NTT COMWARE CORPORATION 2008,2022</p>
+ * <p>[作成日] 2008/02/29</p>
+ * @author NTT COMWARE 鎌田 吉満
+ * <p>[履歴]　[修正日]　　[修正者]　　[管理番号]　　[修正内容]</p>
+ * <p>[履歴]  2007/03/31  鎌田吉満   ４次１期開発   新規作成</p>
+ * <p>[履歴]  2007/06/22  鎌田吉満   故施41P0-0155  設細dlgの検索条件変更</p>
+ * <p>[履歴]  2007/06/22　鎌田吉満   設施41-0055 　 システムエラー時の対応処理設計変更対応</p> 
+ * <p>[履歴]  2007/07/03  鎌田吉満   故施41P0-0325  内訳CSVのソート出力処理修正</p>
+ * <p>[履歴]  2007/07/20  鎌田吉満   設施41-0025 　 ７年帳票対応</p>
+ * <p>[履歴]  2007/07/24  鎌田吉満   設施41-0025 　 ７年帳票対応（再）</p>
+ * <p>[履歴]  2007/08/10  大勝宏美   設施41-0087 　 内訳完成登録時処理修正</p>
+ * <p>[履歴]  2007/08/10  大勝宏美   設施41-0088 　 損益時の要求種別選択可</p>
+ * <p>[履歴]  2007/09/18  大勝宏美　 故施41O2W-0016 架名・装置名選択時に設備～細分・<br>
+ *                                                  整理番号・本体／内訳名を設定</p>
+ * <p>[履歴]  2007/09/21  青木孝幸   故施41O2E-0125 単価表示の修正</p>
+ * <p>[履歴]  2007/09/26  青木孝幸   故施41E-0606   AB長の場合に合価を計算方法修正</p>
+ * <p>[履歴]  2007/09/26  青木孝幸   故施41E-0606   AB長の場合に合価を計算方法修正(再）</p>
+ * <p>[履歴]  2007/10/03  青木孝幸   故施41M-0067   分割レコード時にNS/撤去品一覧の表示の修正</p>
+ * <p>[履歴]  2007/10/17  井上裕至   仕施41M-0005   在再別フラグ入力欄（プルダウン）追加対応</p>
+ * <p>[履歴]  2007/10/25  井上裕至   仕施41M-0007   日計表CSV出力形式をCSV3形式（"で囲む）に変更</p>
+ * <p>[履歴]  2007/11/12  青木孝幸   故施41M-0011   優遇税制"あり"，"なし"表示の修正</p>
+ * <p>[履歴]  2007/12/04  青木孝幸   仕施41M-0016   開始年月の反映対処</p>
+ * <p>[履歴]  2007/12/11  青木孝幸   故施41M-0027   本体構成の区切り線の設定変更</p>
+ * <p>[履歴]  2008/02/29  山本一喜   ４次５期開発   所内内訳書データ作成処理追加</p>
+ *                                                  物品データ反映処理追加</p>
+ *                                                  物品データ変更情報リスト追加</p>                                                  
+ * <p>[履歴]  2008/05/12  馬場要     故施45O-0008   「本体／内訳名」を「細分／本体内訳名」に統一</p>
+ * <p>[履歴]  2008/05/22  中野渡悟   故施45OW-0023  内訳書帳票に装置名、装置番号が出力されるよう修正</p>
+ * <p>[履歴]  2008/08/27  謝海峰     故施45M-0078   完成登録時に、「返納確定前物品チェック」を行っている処理を削除する</p>
+ * <p>[履歴]  2010/10/13  松田亜美   故施56M-0008   一括修正撤去品設計完了フラグ、一括修正NS設計完了フラグの位置番号修正</p>
+ * <p>[履歴]  2010/10/20  松田亜美   故施58P-0018   東の場合、装置番号4桁対応</p>
+ * <p>[履歴]  2016/06/02  鈴木政文   仕施87eM-0002  CSV出力時、文字コード指定相違のため文字化け、及び整数部1桁目が0の場合出力されない不具合修正</p>
+ * <p>[履歴]  2017/08/25  石井邦明   bg91-0223  7年保存バッチ起動実行で複数センターで同時に実行した際、CSVファイル名が重複する不具合修正</p>
+ * <p>[履歴]  2017/12/08  金杉好記   ９次２期開発  西の場合も装置番号４桁対応（東西識別取得廃止）</p>
+ *                                          共通詳細登録時のEDI未送信変更区分チェック変更</p>
+ * <p>[履歴]  2018/10/31  廣部準基   ９次４期開発   初期表示時、物品コード編集時の下り電文にＮＳ／ＣＳ区分を追加</p>
+ *                                                  分割処理に物品情報グループIDを含めるように修正</p>
+ * <p>[履歴]  2022/04/15  松本龍弥   １１次１期開発 在再が未設定の場合の処理の追加、修正</p>
+ *                                                  日計表CSV出力内容の変更</p>
+ * <p>[履歴]  2022/06/30  松本龍弥   １１次２期開発 撤去比率、新設比率、撤去工事費の削除 </p>
+ *                                          グループ共通IT（財務）との連携開始に伴う新コード体系変更対応</p>
+ */
+public class SyonaiUtiwakesyoSakuseiLogic extends AbstractBusinessLogic {
+    
+    /** ログクラス */
+    private static final Log log = LogFactory.getLog(SyonaiUtiwakesyoSakuseiLogic.class);
+    
+//------------電文定義ここから-----------------------------------------------------------------------//
+
+
+    //*********************工事一覧ここから*********************//
+
+    /** 工事一覧検索時に使用する電文定義配列 */
+    private static final String[] KOJIITIRAN = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        /* 下り電文 */
+        "LIST_KOJ",        // 工事一覧検索結果
+        "MSGID"          // メッセージＩＤ
+    };
+    
+    /** 所内内訳書データ作成確認時に使用する電文定義配列 */
+    private static final String[] UTIWAKESAKUSEI_KAKUNIN = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "SNEKENFLG",      // 損益建設フラグ
+        /* 下り電文 */
+        "MSGID",          // メッセージＩＤ
+        "UMEKOMI1",       // 埋込文字列1
+        "UMEKOMI2"        // 埋込文字列2
+    };
+
+    /** 所内内訳書データ作成時に使用する電文定義配列 */
+    private static final String[] UTIWAKE_SAKUSEI = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "SNEKENFLG",      // 損益建設フラグ
+        /* 下り電文 */
+        "MSGID"           // メッセージＩＤ
+    };
+
+    //*********************工事一覧ここまで*********************//
+    
+    //*********************共通詳細ここから*********************//
+
+    /** 共通詳細検索時に使用する電文定義配列 */
+    private static final String[] KYOTUSYOSAI = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        /* 下り電文 */
+        "UWSCLS",         // 受渡書種別
+        "TUN_YM",         // 投入年月
+        "STK_YM",         // 取得年月
+        "EKDTIM_SU",      // 延稼働時間数
+        "CKOYMD",         // 着工年月日
+        "SHKYMD",         // 竣工年月日
+        "SYM",            // 開始年月
+        "UKOCOM",         // 請負会社名
+        "SAKSYA_NM",      // 作成者名
+        "SGTMATKTB",      // 作業通知又は監督通知番号
+        "KJI001",         // 記事１
+        "KJI002",         // 記事２
+        "KJI003",         // 記事３
+        "KJI004",         // 記事４
+        "UTSFLG",         // 内訳書登録完成フラグ      
+        "TOROKUFLG",      // 共通詳細登録済フラグ
+        "MSGID",          // メッセージID
+        "UMEKOMI1",       // 埋込文字列１
+        "UMEKOMI2"        // 埋込文字列２
+    };
+    
+    /** 共通詳細登録時に使用する電文定義配列 */
+    private static final String[] KYOTUSYOSAI_TOROKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "UWSCLS",         // 受渡書種別
+        "TUN_YM",         // 投入年月
+        "STK_YM",         // 取得年月
+        "EKDTIM_SU",      // 延稼働時間数
+        "CKOYMD",         // 着工年月日
+        "SHKYMD",         // 竣工年月日
+        "SYM",            // 開始年月
+        "UKOCOM",         // 請負会社名
+        "SAKSYA_NM",      // 作成者名
+        "SGTMATKTB",      // 作業通知又は監督通知番号
+        "KJI001",         // 記事１
+        "KJI002",         // 記事２
+        "KJI003",         // 記事３
+        "KJI004",         // 記事４
+        "TOROKUFLG",      // 共通詳細登録済フラグ
+        "SNEKENFLG",      // 損益建設フラグ（９次２期追加）
+        /* 下り電文 */
+        "MSGID",          // メッセージID
+        "UMEKOMI"         // 埋込文字列       
+    };
+
+   
+    //*********************共通詳細ここまで*********************//
+  
+    
+
+    //******************工事内訳書一覧ここから******************//
+    
+    /** 工事内訳書一覧検索時に使用する電文定義配列 */
+    private static final String[] UTIWAKE_ITIRAN = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "KSJKMKBAN1",     // 検索条件項目１
+        "KSJKMKBAN2",     // 検索条件項目２
+        "KSJKMKBAN3",     // 検索条件項目３
+        "KSJKMKBAN4",     // 検索条件項目４
+        "KSJNAI1",        // 検索条件１
+        "KSJNAI2",        // 検索条件２
+        "KSJNAI3",        // 検索条件３
+        "KSJNAI4",        // 検索条件４
+        "IRNSRTJN",       // ソート条件
+        "SNEKENFLG",      // 損益建設フラグ
+        "KENSAKUBTNFLG",  // 検索ボタン押下フラグ
+        /* 下り電文 */
+        "ALLREC_SU",      // 結果件数
+        "LIST_KOJUWS",    // 検索結果
+        "UTSKNETOUFLG",   // 内訳完成登録フラグ
+        "MSGID",          // メッセージID
+        "BUPHEKFLG"      // 物品データ変更フラグ
+    };
+    
+    /** 物品削除時に使用する電文定義配列 */
+    private static final String[] BUPPIN_SAKUJO = new String[] {
+        /* 上り電文 */
+        "REC_LIST",       // 内訳レコード通番
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        /* 下り電文 */
+        "MSGID"           // メッセージID
+    };
+    
+    /** 内訳完成登録時に使用する電文定義配列 */
+    private static final String[] UTIWAKE_KANSEITOROKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "SNEKENFLG",      // 損益建設フラグ
+        /* 下り電文 */
+        "MSGID",          // メッセージID
+        "UMEKOMI1",       // 埋込文字列１
+        "UMEKOMI2"        // 埋込文字列２
+    };
+    
+    /** 完成登録解除時に使用する電文定義配列 */
+    private static final String[] KANSEITOROKU_KAIJO = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        /* 下り電文 */
+        "MSGID",          // メッセージID
+        "UMEKOMI"         // 埋込文字
+    };
+    
+    /** 内訳CSVファイル作成処理時に使用する電文定義配列 */
+    private static final String[] CREATE_UTIWAKE_CSV = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKS_NM",         // 施工組織名
+        "SKJBAN",         // 総合工事番号
+        "SKJ_NM",         // 総合工事名
+        "KKN",            // 工事計画番号
+        "KOJ_NM",         // 工事名
+        "KSJKMKBAN1",     // 検索条件項目１
+        "KSJKMKBAN2",     // 検索条件項目２
+        "KSJKMKBAN3",     // 検索条件項目３
+        "KSJKMKBAN4",     // 検索条件項目４
+        "KSJNAI1",        // 検索条件１
+        "KSJNAI2",        // 検索条件２
+        "KSJNAI3",        // 検索条件３
+        "KSJNAI4",        // 検索条件４
+        "IRNSRTJN",       // ソート条件
+    };
+
+    /** 日計表CSVファイル作成処理時に使用する電文定義配列 */
+    private static final String[] CREATE_NIKKEIHYO_CSV = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN"             // 工事計画番号        
+    };
+    
+    /** 内訳書CSV（帳票）作成時に使用する電文定義配列 */
+    private static final String[] UTIWAKESYOCSV = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        /* 下り電文 */
+        "UTIWAKESYO_FILE" // 所内内訳書ファイル名
+    };
+    
+    /** 内訳書データ更新時に使用する電文定義配列 */
+    private static final String[] UTIWAKE_KOUSIN = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "SNEKENFLG",      // 損益建設フラグ
+        "SYORI_FLAG",     // 処理区分
+        /* 下り電文 */
+        "MSGID",          // メッセージＩＤ
+        "UMEKOMI1"        // 埋込文字列1
+    };
+    
+    /** 物品データ変更情報CSV（帳票）作成時に使用する電文定義配列 */
+    private static final String[] BUPDATAHENKOUCSV = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         // 施工組織コード
+        "SKJBAN",         // 総合工事番号
+        "KKN",            // 工事計画番号
+        "SKS_NM",         // 施工組織名
+        "SKJ_NM",         // 総合工事名
+        "KOJ_NM",         // 工事名
+        "SNEKENFLG",      // 損益建設フラグ
+        "SYORI_FLAG",     // 処理区分
+        /* 下り電文 */
+        "UTWSKBJYO_FILE" // 物品データ変更情報リストファイル名
+    };
+    
+    //******************工事内訳書一覧ここまで******************//
+    
+    
+
+    //***************追加・修正・一括修正ここから***************//
+
+    /** 本体内訳名検索時に使用する電文定義配列 */
+    private static final String[] SETUBIJOHO_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SBI",                  //  設備
+        "SYU",                  //  種目
+        "SMK",                  //  細目
+        "SBN",                  //  細分
+        "SIR_CD",               //  整理コード
+        /* 下り電文 */
+        "LIST_SETUBI",          //  設備情報一覧
+        "MSGID",                //  メッセージID 
+        
+        "UTKREC",               //  内訳レコード通番
+        "UKTBKTREC",            //  分割レコード通番
+        "SKS_CD",               //  施工組織コード 
+        "SKJBAN",               //  総合工事番号
+        "KKN",                  //  工事計画番号
+        /* 下り電文 */
+        "YZSTKOKBN",            //  優遇税制適応区分
+        "KNM",                  //  区分名称
+        "TSB_NM",               //  対象設備名称
+        "TSOKAN_ST",            //  対象期間（開始）
+        "TSOKAN_ED",            //  対象期間（終了）
+        "TSOKAN_NND",           //  対象期間（年度）
+        "YZSTKOYN",             //  優遇税制適用有無
+        "HTIUTW_NM",            //  本体／内訳名
+        "YDMFLG"                //  呼出元フラグ
+    };
+
+    /** 初期表示に使用する電文定義配列*/
+    private static final String[] GAMEN_SETTEI = new String[] {
+      /* 上り電文 */
+      "UTKREC",          /* レコード通番 */
+      "SKS_CD",          /* 施工組織コード */
+      "SKJBAN",          /* 総合工事番号 */
+      "KKN",             /* 工事計画番号 */        
+      "HNK",             /* 変更区分 */
+      "PRCKBNFLG",       /* 処理区分フラグ */
+        
+      /* 下り電文 */
+      "CHOBAN",         /* 調書番号 */
+      "ZOG",            /* 増減科目 */
+      "MNGSKH",         /*管理責任者*/
+      "SV_CD",          /*サービスコード*/
+      "YOUCLS",         /* 要求種別 */
+      "BUTU_CD",        /*物品コード*/
+      "BUTU_KANA_NM",   /*物品名カナ*/
+      "KND",            /*建設年度*/
+      "HTIUTWKHF",      /*本体内訳-構成品フラグ*/
+      "AB_LEN",         /*ab長*/
+      "AB_TAKHJI",      /* ａｂ単価表示 */
+      "AB_TANKA",       /* ａｂ単価 */
+      "AB_DAM_TANKA",    /* ダム単価 */
+      "SIYOUSYO_NO",    /*仕様書番号*/
+      "KJIUTW",         /*記事（内訳）*/
+      "SZU_YM",         /*製造年月*/
+      "SZUBAN",         /*製造番号*/
+      "BIL_CD",         /* ビルコード */
+      "BIL_NM",         /* ビル名 */
+      "ITM",            /* 共通アイテム */
+      "FRA",            /*フロア*/
+      "GUN",            /*群*/
+      "TBN",            /*通番*/
+      "KMISTMFLG",      /* 架名/装置名フラグ */
+      "KMISTM",         /*  架名＿装置名*/
+      "KMISTM_NM",      /*装置名(詳細名称)*/
+      "KSTBAN",         /*架番号_装置番号*/
+      "MNGKBN",         /*管理区分*/
+      "SBI",            /*設備*/
+      "SYU",            /*種目*/
+      "SMK",            /*細目*/
+      "SBN",            /*細分*/
+      "SIRBAN",         /*整理番号*/
+      "HTIUTW_NM",      /*本体／内訳名*/
+      "HKK_CD",         /*保管課コード*/
+      "KOB_CD",         /*個別コード*/
+      "SYM",            /*開始年月*/
+      "SRO",            /*数量*/
+      "MAK_CD",         /*メーカコード*/
+      "NKM",            /*メーカ名*/
+      "TAK",            /*単価*/
+      "GOK",            /*合価*/
+      "SINPIN_TANKA",   /*新品単価*/
+      "NS_ZCSSERFLG",   /*NS材料調書設定完了フラグ*/
+      "TKHCHOSERFLG",   /*撤去品調書設計完了フラグ */
+      "YZSTKOKBN",      /*優遇税制適用区分 */
+      "KNM",            /* 区分名称 */
+      "TSB_NM",         /* 対象設備名称  */
+      "TSOKAN_ST",      /* 対象期間（開始） */
+      "TSOKAN_ED",      /* 対象期間（終了） */
+      "ZSBFLG",         /* 在再別フラグ */
+      "TSOKAN_NND",     /* 対象期間（年度） */
+      "KOK_ED",         /* 対象設備名称  */
+      "BUTREC",         /* 物品レコード通番 */
+      "KMI",            /*架名*/
+      "KAB",            /*架番号*/
+      "STM",            /*装置名*/
+      "SUIBAN",         /*装置番号*/
+      "NSCS_KBN",       /* ＮＳ／ＣＳ区分 */
+      "SHKYMD",         /*竣工年月日*/
+      "YZSTKOYN",       /*優遇税制適用有無*/
+      "UKETORI_JOHO",   /*受取情報（フレックスビュー）*/
+      "RCD_JOHO",       /*レコード内訳分割情報*/
+      "UKETORI_JOHO3",  /*受取情報受取通番（フレックスビュー）*/
+      "SOTISYUBETUNM",  /* 装置名種別名 */   
+      "SOTISYUBETU"     /* 装置名種別名 */
+    };  
+    
+    /** 初期表示プルダウンリストに使用する電文定義配列*/
+    private static final String[] SETPULLDOWN = new String[] {
+        /* 上り電文 */
+        "PUTKREC",          // 内訳レコード通番
+        /* 上り電文 */
+        "PZOG",             // 増減科目
+        "PYOUCLS",          // 要求種別
+        "PYOUCLS_CD",       // 要求種別コード
+        "PSV_CD",           // サービスコード
+        "PMNGKBN",          // 管理区分 
+        "PKPOHOH",          // 梱包方法
+        "PKPOHOH_CD"        // 梱包方法コード
+              
+    };
+    
+    /** 架名装置名検索の電文配列 */
+    private static final String[] KASOTI_KENSAKU = new String[] {
+        /* 上り電文 */
+        "KMISTMFLG",          /* 架名装置名フラグ */
+        "STMCLS",             /* 装置名種別 */
+        /* 下り電文 */
+        "KMISTM",             /* 架名装置名 */
+        "SOTILIST",           /* 装置情報一覧 */
+        "MSGID"               /* メッセージID */   
+             
+    };
+    
+    /** メーカ名検索時に使用する電文定義配列*/
+    private static final String[] MAK_KENSAKU = new String[] {
+        /* 上り電文 */
+        "MAK_CD",      /*メーカコード*/
+        /* 下り電文 */
+        "NKM"         /*メーカ名*/
+             
+    };
+    
+    /** 物品名検索時に使用する電文定義配列*/
+    private static final String[] BUTU_KENSAKU = new String[] {
+        /* 上り電文 */
+        "BUTU_CD",        /*メーカコード*/
+        "ZOG",
+        /* 下り電文 */
+        "BUTU_KANA_NM",   /*メーカ名*/
+        "TAK",            /*単価*/
+        "SINPIN_TANKA",    /*新品単価*/
+        "AB_TAKHJI",      /*ａｂ単価表示*/
+        "AB_TANKA",       /*ａｂ単価*/
+        "AB_DAM_TANKA",   /*ダム単価*/
+        "NSCS_KBN"        /* ＮＳ／ＣＳ区分 */
+    };
+    
+    /** 送付先検索時に使用する電文定義配列*/
+    private static final String[] SOHU_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SCD",            /*固定資産組織コード */
+        /* 下り電文 */
+       "SOHU_LIST"        /*送付先検索結果*/
+    };
+    
+    
+    /** フロア群通番検索時に使用する電文定義配列*/
+    private static final String[] FLAGUNTUBAN_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",         /* 施工組織コード */
+        "SKJBAN",         /* 総合工事番号*/
+        "KKN",            /* 工事計画番号*/
+        /* 下り電文 */
+        "FLAGUNTUBAN_LIST"/*送付先検索結果*/
+      
+    };
+    
+    
+    /** 内訳完成登録時に使用する電文定義配列*/
+    private static final String[] TOROKU_KOMOKU = new String[] {
+      /* 上り電文 */
+      "UTKREC",         /*内訳レコード通番 */
+      "UKTBKTREC",      /*分割レコード通番 */
+      "HNK",            /* 変更区分 */
+      "PRCKBNFLG",      /* 処理区分フラグ */
+      "YDMFLG",         /* 呼出元フラグ */
+      "SKS_CD",         /* 施工組織コード */
+      "SKJBAN",         /* 総合工事番号*/
+      "KKN",            /* 工事計画番号*/
+      "SRTREC",         /* ソート用レコード通番*/
+      "CHOBAN",         /* 調書番号 */
+      //10
+      "ZOG",            /* 増減科目 */
+      "MNGSKH",         /* 管理責任者 5*/
+      "SV_CD",          /* サービスコード 10*/
+      "YOUCLS",         /* 要求種別 */
+      "BUTU_CD",        /* 物品コード*/
+      "BUTU_KANA_NM",   /* 物品カナ*/
+      "KND",            /* 建設年度 4*/
+      "HTIUTWKHF",      /* 本体内訳-構成品フラグ*/
+      "AB_LEN",         /* ab長*/
+      "SIYOUSYO_NO",    /* 仕様書番号*/
+      //20
+      "KJIUTW",         /* 記事（内訳）*/
+      "SZU_YM",         /* 製造年月*/
+      "SZUBAN",         /* 製造番号*/                              
+      "BIL_CD",         /* ビルコード */
+      "BIL_NM",         /* ビル名 */
+      "ITM",            /* 共通アイテム */
+      "FRA",            /* フロア*/
+      "GUN",            /* 群*/
+      "TBN",            /* 通番*/
+      "KMISTMFLG",      /* 架名/装置名フラグ */
+      //30
+      "KMISTM",         /* 架名＿装置名*/
+      "KMISTM_NM",      /* 装置名(詳細名称)*/
+      "KSTBAN",         /* 架番号_装置番号 4*/
+      "MNGKBN",         /* 管理区分 2*/
+      "SBI",            /* 設備*/
+      "SYU",            /* 種目*/
+      "SMK",            /* 細目*/
+      "SBN",            /* 細分*/
+      "SIRBAN",         /* 整理番号*/
+      "HTIUTW_NM",      /* 本体／内訳名*/
+      //40
+      "HKK_CD",         /* 保管課コード*/
+      "KOB_CD",         /* 個別コード*/
+      "SYM",            /* 開始年月*/
+      "BKTSRO",         /*分割数量*/
+      "MAK_CD",         /*メーカコード*/
+      "NKM",            /*メーカ名*/
+      "TAK",            /*単価 10*/
+      "GOK",            /*合価 10*/
+      "SYOYTIJKISYK",   /*使用予定時期（所要期） 8*/
+      "SFS_CD",         /*送付先コード 3*/
+      //50
+      "SFSBIL_NM",      /*送付先ビル名 20 */
+      "RKYKBN",         /*利活用区分 */
+      "TNSKBN",         /*転所区分*/
+      "TEKSIKYOH",    /*撤去試験要否*/
+      "KPOHOH",         /*梱包方法 1*/
+      "STJ001",         /*指定１ 12*/
+      "STJ002",         /*指定２ 12*/
+      "STJ003",         /*指定３ 12*/
+      "STJ004",         /*指定４ 12*/
+      "STJ005",         /*指定５ 12*/
+      //60
+      "SINPIN_TANKA",   /*新品単価*/
+      "NS_ZCSSERFLG",   /*NS材料調書設定完了フラグ*/
+      "YZSTKOKBN",      /*優遇税制適応区分 70*/
+      "KNM",            /* 区分名称 140*/
+      "TSB_NM",         /* 対象設備名称 120 */
+      "TSOKAN_ST",      /* 対象期間（開始） */
+      "TSOKAN_ED",      /* 対象期間（終了） */
+      "KOK_ED",         /* 対象設備名称 120 */
+      "UKETORI_JOHO",   /*受取情報（フレックスビュー）*/
+      "MSGID",          /* メッセージID*/
+      //70
+      "SOTI_SYUBETU",   /*装置名種別*/
+      "GYOTEI_FLAG",    /*業提フラグ*/
+      "NIKKEI_FLAG",    /*日計表フラグ*/
+      "ZSBFLG",         /*在再来フラグ*/
+      "UTWBKTFLG",      /*内訳書分割フラグ*/
+      "STS",            /*ステータス*/
+      "SRO",             /*数量*/
+      "TITDNPBAN",      /* 統一伝票番号 14*/     
+      "UKTYMD",         /* 受取年月日 7*/
+      "UKTSHA",         /* 受取確認者 20*/
+      //80
+      "KOSSCD",         /*固定資産組織コード*/  
+      "UKETORI_JOHO3",  /*受取情報受取通番（フレックスビュー）*/
+      "RCD_JOHO",        /*レコード内訳分割情報*/
+      "KMI",            /* 架名 */
+      "KAB",            /* 架番号 */
+      "STM",            /* 装置名 */
+      "SUIBAN",          /* 装置番号 */
+      "CHOEDABAN",       /* 調書枝番号 */
+      "BUTREC",          /* 物品レコード通番 */
+      "UNTHNZFLG",       /* ユニット変更済フラグ */
+      "HAIBANHNZFLG",    /* 配置番号変更済フラグ */
+      "KMIHNZFLG",       /* 架名変更済フラグ */
+      "STMHNZFLG",       /* 装置名変更済フラグ */
+      "KBNHNZFLG",       /* 架番号変更済フラグ */
+      "SBNHNZFLG",       /* 装置番号変更済フラグ */
+      "SROHNZFLG",       /* 数量変更済フラグ */
+      "MAKHNZFLG",       /* メーカ変更済フラグ */
+      "ZSBHNZFLG",       /* 在再別変更済フラグ */
+      "TAKHNZFLG",       /* 単価変更済フラグ */
+      "SBMHNZFLG",       /* 細分名変更フラグ */
+      "KOB_CDHNZFLG",    /* 個別コード変更フラグ */
+      "KNDHNZFLG"        /* 建設年度変更フラグ */
+    };
+
+    /** 初期表示に使用する電文定義配列*/
+    private static final String[] IKKATU_SYUSEI = new String[] {
+      /* 上り電文 */
+      "UTKREC",          /* レコード通番 */
+      "SKS_CD",          /* 施工組織コード */
+      "SKJBAN",          /* 総合工事番号 */
+      "KKN",             /* 工事計画番号 */        
+      "HNK",             /* 変更区分 */
+      "PRCKBNFLG",       /* 処理区分フラグ */
+        
+      /* 下り電文 */
+      "CHOBAN",         /* 調書番号 */
+      "ZOG",            /* 増減科目 */
+      "MNGSKH",         /* 管理責任者 5*/
+      "SV_CD",          /* サービスコード 10*/
+      "YOUCLS",         /* 要求種別 */
+      "BUTU_CD",        /* 物品コード*/
+      "BUTU_KANA_NM",   /* 物品カナ*/
+      "KND",            /* 建設年度 4*/
+      "HTIUTWKHF",      /* 本体内訳-構成品フラグ*/
+      "AB_LEN",         /* ab長*/
+      "AB_TAKHJI",      /* ａｂ単価表示 */
+      "AB_TANKA",       /* ａｂ単価 */
+      "AB_DAM_TANKA",   /* ダム単価 */
+      "SIYOUSYO_NO",    /* 仕様書番号*/
+      "KJIUTW",         /* 記事（内訳）*/
+      "SZU_YM",         /* 製造年月*/
+      "SZUBAN",         /* 製造番号*/                              
+      "BIL_CD",         /* ビルコード */
+      "BIL_NM",         /* ビル名 */
+      "ITM",            /* 共通アイテム */
+      "FRA",            /* フロア*/
+      "GUN",            /* 群*/
+      "TBN",            /* 通番*/
+      "KMISTMFLG",      /* 架名/装置名フラグ */
+      "KMISTM",         /* 架名＿装置名*/
+      "KMISTM_NM",      /* 装置名(詳細名称)*/
+      "KSTBAN",         /* 架番号_装置番号 4*/
+      "MNGKBN",         /* 管理区分 2*/
+      "SBI",            /* 設備*/
+      "SYU",            /* 種目*/
+      "SMK",            /* 細目*/
+      "SBN",            /* 細分*/
+      "SIRBAN",         /* 整理番号*/
+      "HTIUTW_NM",      /* 本体／内訳名*/
+      "HKK_CD",         /* 保管課コード*/
+      "KOB_CD",         /* 個別コード*/
+      "SYM",            /* 開始年月*/
+      "SRO",            /* 分割数量*/
+      "MAK_CD",         /* メーカコード*/
+      "NKM",            /* メーカ名*/
+      "TAK",            /* 単価 10*/
+      "GOK",            /* 合価 10*/
+      "SINPIN_TANKA",   /* 新品単価*/
+      "NS_ZCSSERFLG",   /* NS材料調書設定完了フラグ*/
+      "TKHCHOSERFLG",   /* 撤去品調書設計完了フラグ */
+      "YZSTKOKBN",      /* 優遇税制適応区分 70*/
+      "KNM",            /* 区分名称 140*/
+      "TSB_NM",         /* 対象設備名称 120 */
+      "TSOKAN_ST",      /* 対象期間（開始） */
+      "TSOKAN_ED",      /* 対象期間（終了） */
+      "ZSBFLG",         /* 在再別フラグ */
+      "TSOKAN_NND",     /* 対象期間（年度） */
+      "KOK_ED",         /* 対象設備名称 120 */
+      "BUTREC",         /* 物品レコード通番 */
+      "KMI",            /* 架名*/
+      "KAB",            /* 架番号*/
+      "STM",            /* 装置名*/
+      "SUIBAN",         /* 装置番号*/
+      "NSCS_KBN",       /* ＮＳ／ＣＳ区分 */
+      "SHKYMD",         /* 竣工年月日*/
+      "YZSTKOYN",       /* 優遇税制適用有無*/
+      "UKETORI_JOHO",   /* 受取情報（フレックスビュー）*/
+      "RCD_JOHO",       /* レコード内訳分割情報*/
+      "UKETORI_JOHO3",  /* 受取情報受取通番（フレックスビュー）*/
+      "SOTISYUBETUNM"   /* 装置名種別名 */      
+    };  
+    
+    /** 交換機ID検索時に使用する電文定義配列 */
+    private static final String[] NOD_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",        // 施工組織コード
+        "BIL_CD",        // ビルコード
+        "UNT_CD",        // ユニットコード
+        /* 下り電文 */
+        "NOD_ID",        // 交換機ID
+        "MSGID"          // メッセージID        
+    };
+
+    //***************追加・修正・一括修正ここまで***************//
+
+    
+
+    //*********************端局区間ここから*********************//
+
+    /** 端局区間検索時に使用する電文定義配列 */
+    private static final String[] TANKYOKUKUKAN = new String[] {
+        /* 上り電文 */
+        "SKS_CD",           // 施工組織コード
+        "BIL_CD",           // ビルコード
+        "JIKSELFLG",        //時局選択フラグ
+        /* 下り電文 */
+        "LIST_TNKKUN"        // 端局区間検索結果       
+    };
+
+    //*********************端局区間ここまで*********************//
+    
+    
+
+    //*********************内訳分割ここから*********************//
+
+    /** 内訳分割情報検索時に使用する電文定義配列 */
+    private static final String[] BUNKATU_KENSAKU = new String[] {
+        /* 上り電文 */
+        "UTKREC",           // レコード通番
+        "UKTBKTREC",        // 分割通番
+        "SKS_CD",           // 施工組織コード
+        "SKJBAN",           // 総合工事番号
+        "KKN",              // 工事計画番号
+        /* 下り電文 */
+        "CHOBAN",           // 調書番号
+        "ZOG",              // 増減科目
+        "MNGSKH",           // 管理責任者
+        "SV_CD",            // サービスコード
+        "HKK_CD",           // 保管課コード
+        "KOB_CD",           // 個別コード
+        "KND",              // 建設年度
+        "HTIUTWKHF",        // 本体内訳－構成品フラグ
+        "BUTU_CD",          // 物品コード
+        "BUTU_KANA_NM",     // 物品カナ品名
+        "AB_LEN",           // AB長
+        "SUU",              // 数量
+        "MAK_CD",           // メーカコード
+        "NKM",              // メーカ名
+        "SZU_YM",           // 製造年月
+        "SZUBAN",           // 製造番号
+        "TAK",              // 単価
+        "GOK",              // 合価
+        "LIST_BKTJYO",      // 分割情報リスト
+        "TTLSRO",           // 合計数量
+        "TTLKGK",           // 合計金額
+        "LIST_MNGKBN"       // 管理区分項目リスト
+    };
+
+    /** 内訳分割登録時に使用する電文定義配列 */
+    private static final String[] BUNKATU_TOROKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",           // 施工組織コード
+        "UTKREC",           // 内訳レコード
+        "LIST_BKTJYODAT",   // 分割情報一覧
+        
+        "SKJBAN",           // 総合工事番号
+        "KKN",              // 工事計画番号
+        "ZOG",              // 増減科目
+        "MNGSKH",           // 管理責任者
+        "SV_CD",            // サービスコード
+        "KOB_CD",           // 個別コード
+        "HTIUTWKHF",        // 本体内訳-構成品フラグ
+        "KNA",              // カナ品名
+        "AB_LEN",           // AB長
+        "SZU_YM",           // 製造年月
+        "SZUBAN",           // 製造番号
+        "CHOBAN",           // 調書番号
+        "BUTU_CD",          // 物品コード
+        "RECCNT",           // 分割レコード数
+        "BKTTBN",           // 分割通番
+        /* 下り電文 */
+        "MSGID",            // メッセージID
+        "UMEKOMI1",         // 埋込１
+        "UMEKOMI2"          // 埋込２
+    };
+
+    /** 略称ビル名検索時に使用する電文定義配列 */
+    private static final String[] BILL_NAME_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",       // 施工組織コード
+        "BIL_CD",       // ビルコード
+        /* 下り電文 */  
+        "RKSBMI"        // 略称ビル名
+    };
+    
+    /** 本体内訳名検索時に使用する電文定義配列 */
+    private static final String[] HONTAI_UTIWAKE_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SBI",          // 設備
+        "SYU",          // 種目
+        "SMK",          // 細目
+        "SBN",          // 細分
+        "SIR_CD",       // 整理コード
+        /* 下り電文 */
+        "HTIUTW_NM"    // 本体内訳名
+    };
+    
+    /** ビル検索時に使用する電文定義配列 */
+    private static final String[] BILL_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",        // 施工組織コード
+        "SKJBAN",        // 総合工事番号
+        "KKN",           // 工事計画番号
+        "FSIKSS_CD",     // 固定資産組織定数コード
+        "KSKPTNFLG",     // 検索パターンフラグ
+        "BIL_NAME",      // 略称ビル名
+        /* 下り電文 */
+        "LIST_BKDJYO",   // ビルコード一覧
+        "MSGID",         // メッセージID
+        "UMEKOMI"        // 埋め込み文字
+    };
+    
+    /** ユニット検索時に使用する電文定義配列 */
+    private static final String[] UNIT_KENSAKU = new String[] {
+        /* 上り電文 */
+        "SKS_CD",        // 施工組織コード
+        "BIL_CD",        // ビルコード
+        /* 下り電文 */
+        "LIST_UNT_CD",   // ユニットコード一覧
+        "MSGID"          // メッセージID        
+    };
+
+    //*********************内訳分割ここまで*********************//    
+
+//------------電文定義ここまで-----------------------------------------------------------------------//
+    
+    
+//------------定数定義ここから-----------------------------------------------------------------------//
+    
+    /** 内訳書フラグ初期値定数 */
+    private static final String UTSFLG = "0";
+
+    /** 受渡書フラグ初期値定数 */
+    private static final String UWSFLG = "0";
+
+    /** 所外所内フラグ初期値定数 */
+    private static final String SGISNIFLG = "2";
+    
+    /** タンキングFD初期値定数 */
+    private static final String TFDSAKFLG = "0";
+    
+    /** 受渡完了フラグ初期値定数 */
+    private static final String UKWKNRFLG = "0";
+    
+    /** CSV用のカンマ定義文字 */
+    private static final String COMMA = ",";
+    
+    /** CSV用の改行コード定義文字 */
+    private static final String RETURN = System.getProperty("line.separator");
+
+    /** WBSの位置番号 */
+    private final int WBS_INDEX = 0;
+    
+    /** 増減科目の位置番号 */
+    private final int ZOGEN_INDEX = 2;
+    
+    /** 本体構成品フラグの位置番号 */
+    private final int HONTAI_KOSEI_INDEX = 23;
+    
+    /** 数量の位置番号 */
+    private final int SURYO_INDEX = 27;
+    
+    /** 内訳CSVのヘッダ定義　*/
+    private static final String[] UTIWAKE_HEADER = new String[] {
+        "施工組織コード",
+        "施工組織名",
+        "総合工事番号",
+        "総合工事名",
+        "WBS",
+        "工事名",
+        "ビル名",
+        "増減科目",
+        "管理責任者",
+        "収容区コード",
+        "調書管理番号",
+        "サービスコード",
+        "共通アイテム",
+        "管理区分",
+        "設備",
+        "種目",
+        "細目",
+        "細分",
+        "整理コード",
+        "保管課コード",
+        "個別コード",
+        //"本体/内訳名",OT UPD baba 2008/05/12 
+        "細分/本体内訳名",
+        "建設年度",
+        "フロア",
+        "群",
+        "通番",
+        "架名/装置名",
+        "番号",
+        "本体構成",
+        "カナ品名",
+        "ａｂ長",
+        "物品コード",
+        "本体数量",
+        "構成数量",
+        "新設数量",
+        "撤去数量",
+        "単価",
+        "合価",
+        "記事",
+        "延稼働時間",
+        "撤去比率",
+        "新設比率",
+        "撤去工事費",
+        "着工年月日",
+        "竣工年月日",
+        "業者名",
+        "作成者名",
+        "通知番号",
+        "記事1",
+        "記事2",
+        "記事3",
+        "記事4",
+        "メーカコード",
+        "メーカ名",
+        "ビルコード"
+    };
+    
+    
+    /** 日計表CSVのヘッダ定義 */
+    private static final String[] NIKKEIHYO_HEADER = new String[] {
+        "施工組織コード",
+        "総合工事番号",
+        "工事計画番号",
+        "受取組織コード",
+        "受取物管者コード",
+        "購買依頼伝票明細番号",
+        "購買発注／出荷伝票明細番号",
+        "入庫／出庫伝票明細番号",
+        "物品コード",
+        "在再別フラグ",
+        "数量",
+        "単価",
+        "合価",
+        "ロット番号",
+        "日計表フラグ"
+    };
+    
+    /** 一括修正表示桁数 */
+    private static final int[] DATA_LENGTH = {
+        5,      // 調書番号
+        2,      // 増減科目
+        5,      // 管理責任者
+        10,     // サービスコード
+        23,     // 要求種別
+        8,      // 物品コード
+        100,    // 物品カナ品名
+        4,      // 建設年度
+        1,      // 本体内訳－構成品フラグ
+        6,      // ａｂ長
+        1,      // ａｂ単価表示
+        1,      // ａｂ単価
+        1,      // ダム単価
+        30,     // 仕様書番号
+        20,     // 記事（内訳）
+        7,      // 製造年月
+        12,     // 製造番号
+        10,     // ビルコード
+        20,     // ビル名
+        7,      // 共通アイテム
+        4,      // フロア
+        1,      // 群
+        4,      // 通番
+        1,      // 架名/装置名フラグ
+        54,     // 架名_装置名
+        100,    // 装置名（詳細名称）
+        4,      // 架番号_装置番号
+        2,      // 管理区分
+        3,      // 設備
+        2,      // 種目
+        2,      // 細目        
+        3,      // 細分
+        3,      // 整理コード
+        100,    // 本体内訳名
+        5,      // 保管課コード
+        5,      // 個別コード
+        7,      // 開始年月
+        6,      // 分割数量
+        3,      // メーカコード
+        16,     // メーカ名
+        13,     // 単価        
+        13,     // 合価
+        13,     // 新品単価
+        1,      // NS材料調書設定完了フラグ
+        1,      // 撤去品調書設定完了フラグ
+        70,     // 優遇税制適応区分
+        140,    // 区分名称
+        120,    // 対象設備名称
+        10,     // 対象期間（開始）
+        10,     // 対象期間（終了）
+        2,      // 在再別フラグ
+        3,      // 対象期間（年度）
+        120,    // 対象設備名称 
+        10,     // 物品レコード通番
+        54,     // 架名
+        4,      // 架番号
+        54,     // 装置名
+        4,      // 装置番号
+        1,      // ＮＳ／ＣＳ区分
+        8,      // 竣工年月日
+        1,      // 優遇税制適用有無
+        1,      // 受取情報（フレックスビュー）
+        1,      // レコード内訳分割情報
+        1,      // 受取情報受取通番（フレックスビュー）
+        20      // 装置名種別名
+    };
+    
+    /** 検索パターンフラグ:工通指示検索 */
+    private static final String KENSAKU_PATTERN_KOTUSIJI = "0";
+    
+    /** 検索パターンフラグ:ビルコード検索 */
+    private static final String KENSAKU_PATTERN_BILL = "1";
+    
+    /** 処理区分フラグ:追加 */
+    private static final String SYORI_KUBUN_TUIKA = "0";
+
+    /** 処理区分フラグ:更新 */
+    private static final String SYORI_KUBUN_KOSIN = "1";
+    
+    /** 呼出元画面:NS/撤去 */
+    private static final String YOBIDASI_NS_TEKKYO = "0";
+
+    /** 帳票種別 */
+    private static final String D_SYRSBT = "SYRSBT";
+    
+    /** 処理区分(オンライン)。*/
+    private static final int C_SYRKBN_ONLINE = 1;
+
+    /** 処理区分(バッチ)。*/
+    private static final int C_SYRKBN_BAT = 2;
+
+    /** 処理種別(バッチ)。*/
+    private static final String C_SYRSBT_BAT = "2";
+    
+    /** バッチ用帳票ファイル名 */
+    private static final String D_B_OUT_FILE_NAME = "OUT_FILE_NAME";
+    
+    /** バッチ帳票処理リターンコード */
+    private static final String D_B_RTN = "RTN";
+
+    /** バッチ帳票処理エラー内容 */
+    private static final String D_B_ERRNAI = "ERRNAI";   
+       
+    /** CSVファイル標準文字コード */
+    private static final String MOJI_CODE = "Shift_JIS";
+
+    private static final String EXIST_NULL_DATA = "NNCW5058";
+    
+    /** 完成登録必須項目NULLレコードありメッセージID */
+    private static final String SEKEI_MIKANRYO = "NNCW1102";
+    
+    private static final String NOT_LAST_BUTSTS = "NNCW1085";
+    
+/* ****** 2008/08/27 故施45M-0078 謝海峰 DEL START ************
+    private static final String NOT_KOJIZANPIN = "NNCW1084";
+    
+    private static final String NOT_HENOUKANRYO = "NNCW5088";
+   ****** 2008/08/27 故施45M-0078 謝海峰 DEL END *********** */
+    
+    /** 完成登録時物品費合計０ */
+    private static final String BUPPIN_TOTAL_0 = "NNCW1105";
+
+    /** ストアド正常終了 */
+    private static final String COMPLETE = "NNCN0001";
+    
+    /** ストアドシステムエラー */
+    private static final String STORED_SYSTEM_ERR = "NNCE0991";
+    
+    /** 一括修正NS設計完了フラグ位置番号 */
+    /* private static final int NS_FLG_INDEX = 55; 故施56M-0008 フラグ位置修正 */
+    private static final int NS_FLG_INDEX = 43;
+
+    /** 一括修正撤去品設計完了フラグ位置番号 */
+    /* private static final int TEKKYO_FLG_INDEX = 56; 故施56M-0008 フラグ位置修正 */
+    private static final int TEKKYO_FLG_INDEX = 44;
+
+    
+//------------定数定義ここまで-----------------------------------------------------------------------//
+    
+    
+//------------メソッド定義ここから-------------------------------------------------------------------//
+    
+    //******工事一覧ここから******//
+    /**
+     * <p>
+     * [概 要] 工事一覧検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 工事一覧を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void kojiItiran() throws SystemException{
+        
+        // クライアントからの上り電文を取得
+        final String sekoCode = getRequestData(KOJIITIRAN[0]);
+        final String sogoBango = getRequestData(KOJIITIRAN[1]);
+
+        // 含み工事情報エンティティを生成
+        final N5Skifkj01Entity entityN5Skifkj01 = (N5Skifkj01Entity) getEntity(N5Skifkj01Entity.class);
+        
+        final List list = entityN5Skifkj01.findByKeyFukumikojiKensaku1(sekoCode,sogoBango);
+
+        if ( list.size() == 0 ) {
+            addResponseData(KOJIITIRAN[3], "NNCW0007");
+        }   else {
+            // 検索結果を下り電文に設定
+            addResponseData(KOJIITIRAN[2], list);
+        }
+    }
+    
+     /**
+     * <p>
+     * [概 要] 所内内訳書データ作成確認
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 所内内訳書データ作成前の確認をします
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void checkUtiwakeSakusei() throws SystemException{ 
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("checkUtiwakeSakusei() - start");
+        }
+        
+
+        // クライアントからの上り電文を取得
+        final String sekoCode = getRequestData(UTIWAKESAKUSEI_KAKUNIN[0]);    // 施工組織コード
+        final String sogoBango = getRequestData(UTIWAKESAKUSEI_KAKUNIN[1]);   // 総合工事番号
+        final String kojiBango = getRequestData(UTIWAKESAKUSEI_KAKUNIN[2]);   // 工事計画番号 
+        final String sonkenFlag = getRequestData(UTIWAKESAKUSEI_KAKUNIN[3]);  // 損益建設フラグ
+        
+        // 共通詳細エンティティを生成
+        final N5Buikss01Entity entityN5Buikss01 =(N5Buikss01Entity)getEntity(N5Buikss01Entity.class);
+        // 共通詳細参照の呼び出し
+        final List kss_list = entityN5Buikss01.findAllKyotuKensaku(sekoCode,sogoBango,kojiBango);
+
+        // 共通詳細にデータがある場合は検索結果を下り電文に設定
+        if( kss_list.size() != 0 ) {
+            for( int item = 0; item < kss_list.size(); item++ ) {
+                Object[] kss_obj = (Object[])kss_list.get(item);
+                
+                String kanseiFlag = "1";
+                
+                // 所内内訳書完成登録済みの場合はメッセージを下り電文に設定
+                if( kss_obj[14].equals(kanseiFlag)) {
+                    addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCW1092");
+                    addResponseData(UTIWAKESAKUSEI_KAKUNIN[5], "内訳書完成登録");
+                    addResponseData(UTIWAKESAKUSEI_KAKUNIN[6], "データ作成処理");
+                    return;
+                }
+            }
+        } else {
+            // 共通詳細にデータがない場合、メッセージを下り電文に設定
+            addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCW1100");
+            return;
+        }
+
+        boolean notflag = false; 
+        final String flag = "0";
+        // 物品要求エンティティを作成
+        final N5Buibyk01Entity entityN5Buibyk = (N5Buibyk01Entity) getEntity(N5Buibyk01Entity.class);
+        // 撤去_在庫データ登録エンティティを作成
+        final N5Buitzk01Entity entityN5Buitzk = (N5Buitzk01Entity) getEntity(N5Buitzk01Entity.class);
+        
+        if( sonkenFlag.equals(flag) ) {
+            // 画面上の損建区分が建設の場合
+            // 内訳書作成予定 物品要求レコードを検索
+            if( entityN5Buibyk.findByKeyUtiwakeyoteiRecord(sekoCode, sogoBango, kojiBango) == 0 ) {
+                notflag = true;
+            }            
+            
+        } else {
+            // 画面上の損建区分が損益の場合            
+            // 内訳書作成予定 撤去_在庫データ登録レコードを検索
+            if ( entityN5Buitzk.findByKeyUtiwakeyoteiRecord(sekoCode, sogoBango, kojiBango) == 0 ) {
+                notflag = true;
+            }
+        }
+
+        if( notflag) {
+            //　内訳書作成予定データが存在しない場合
+            addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCW1106");
+            addResponseData(UTIWAKESAKUSEI_KAKUNIN[5], "処理可能なデータ");
+            return;
+        }
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        // 所内内訳書既存レコードを検索
+        if( entityN5Buiutw.checkUtiwakeRecord(sekoCode, sogoBango, kojiBango) == 0 ) {
+            // 所内内訳書に既存レコードが存在しない場合
+            
+            int countBuppim =0;
+            int countZsb =0;
+            if( sonkenFlag.equals(flag) ) {
+                // 物品要求レコードの物品ステータス（最終）確認
+                countBuppim = entityN5Buibyk.checkSaisyuSutetasu(sekoCode, sogoBango, kojiBango);
+                // 物品要求レコードの在再別フラグ確認
+                countZsb = entityN5Buibyk.checkZaisaibetsu(sekoCode, sogoBango, kojiBango);
+            } else{
+                // 撤去_在庫データ登録レコードの利活用区分確認            
+                countBuppim = entityN5Buitzk.checkRikatsuKubun(sekoCode, sogoBango, kojiBango);
+            }
+            
+            if (countZsb > 0) {
+                // 在再別がNULL(未設定)のデータが存在する場合、メッセージを下り電文に設定
+                addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCC1076");            
+                addResponseData(UTIWAKESAKUSEI_KAKUNIN[5], "在再");
+            } else {
+                if (countBuppim > 0) {
+                    // 物品ステータスあるいは利活用区分が工事途中の場合、
+                    // メッセージを下り電文に設定
+                    addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCC5016");            
+                } else {
+                    // データ作成実行
+                    addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCC0001");
+                }
+            }
+            
+        } else {
+            // 所内内訳書に既存レコードが存在する場合、メッセージを下り電文に設定
+            addResponseData(UTIWAKESAKUSEI_KAKUNIN[4], "NNCC5015");            
+            addResponseData(UTIWAKESAKUSEI_KAKUNIN[5], "内訳書");
+        }
+
+        if( log.isDebugEnabled() ) {
+            log.debug("checkUtiwakeSakusei() - end");
+        }
+    }
+
+    /**
+     * <p>
+     * [概 要] 所内内訳書データ作成
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 所内内訳書データを作成します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException
+     */
+    public void addUtiwake() throws SystemException, BusinessException { 
+
+        if( log.isDebugEnabled() ) {
+            log.debug("addUtiwake() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(UTIWAKE_SAKUSEI[0]);      // 施工組織コード
+        final String sogoBango = getRequestData(UTIWAKE_SAKUSEI[1]);     // 総合工事番号
+        final String kojiBango = getRequestData(UTIWAKE_SAKUSEI[2]);     // 工事計画番号        
+        final String sonkenFlag = getRequestData(UTIWAKE_SAKUSEI[3]);    // 損益建設フラグ
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+        
+        // ストアドプロシージャ呼出し
+        //final Object[] retParam = entityN5Buiutw.addUtiwakeStored(sekoCode, sogoBango, kojiBango, sonkenFlag, eastWest);
+        final Object[] retParam = entityN5Buiutw.addUtiwakeStored(sekoCode, sogoBango, kojiBango, sonkenFlag);
+        
+        BigDecimal sqlCode = (BigDecimal)retParam[1];
+
+        if( sqlCode.intValue() == -54 ) {
+            // 業務エラーを設定
+            // 排他失敗
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#addUtiwake()");
+        }
+
+        if(COMPLETE.equals(retParam[0])) {
+            // ストアドプロシージャが正常終了の場合、下り電文にメッセージIDをセット
+            addResponseData(UTIWAKE_SAKUSEI[4], retParam[0]);
+        } else {
+            // システムエラーの場合
+            if(STORED_SYSTEM_ERR.equals(retParam[0])) {
+                this.setMessage(new Message((String)retParam[0]));
+                throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#addUtiwake");
+            }
+        }
+
+        if( log.isDebugEnabled() ) {
+            log.debug("addUtiwake() - end");
+        }
+    }
+
+    //******工事一覧ここまで******//
+    
+    //******共通詳細ここから******//
+    /**
+     * <p>
+     * [概 要] 共通詳細検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 共通詳細データを検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void kyotuSyosai() throws SystemException {
+        
+        // クライアントからの上り電文を取得
+        final String sekoCode = getRequestData(KYOTUSYOSAI[0]);
+        final String sogoBango = getRequestData(KYOTUSYOSAI[1]);
+        final String kojiBango = getRequestData(KYOTUSYOSAI[2]);
+        
+        // 共通詳細エンティティを生成
+        final N5Buikss01Entity entityN5Buikss01 =(N5Buikss01Entity)getEntity(N5Buikss01Entity.class);
+        // 共通詳細参照の呼び出し
+        final List kss_list = entityN5Buikss01.findAllKyotuKensaku(sekoCode,sogoBango,kojiBango);
+
+        // 共通詳細にデータがある場合は検索結果を下り電文に設定
+        if( kss_list.size() != 0 ) {
+            for( int item = 0; item < kss_list.size(); item++ ) {
+                Object[] kss_obj = (Object[])kss_list.get(item);
+                
+                addResponseData(KYOTUSYOSAI[3], kss_obj[0]);
+                addResponseData(KYOTUSYOSAI[4], kss_obj[1]);
+                addResponseData(KYOTUSYOSAI[5], kss_obj[2]);
+                addResponseData(KYOTUSYOSAI[6], kss_obj[3]);
+                addResponseData(KYOTUSYOSAI[7], kss_obj[4]);
+                addResponseData(KYOTUSYOSAI[8], kss_obj[5]);
+                addResponseData(KYOTUSYOSAI[9], kss_obj[6]);
+                addResponseData(KYOTUSYOSAI[10], kss_obj[7]);
+                addResponseData(KYOTUSYOSAI[11], kss_obj[8]);
+                addResponseData(KYOTUSYOSAI[12], kss_obj[9]);
+                addResponseData(KYOTUSYOSAI[13], kss_obj[10]);
+                addResponseData(KYOTUSYOSAI[14], kss_obj[11]);
+                addResponseData(KYOTUSYOSAI[15], kss_obj[12]);
+                addResponseData(KYOTUSYOSAI[16], kss_obj[13]);
+                addResponseData(KYOTUSYOSAI[17], kss_obj[14]);
+                addResponseData(KYOTUSYOSAI[18], "1");
+                
+                String kanseiFlag = "1";
+                
+                // 所内内訳書完成登録済みの場合はメッセージを下り電文に設定
+                if( kss_obj[14].equals(kanseiFlag)) {
+                    addResponseData(KYOTUSYOSAI[19], "NNCW1092");
+                    addResponseData(KYOTUSYOSAI[20], "内訳書完成登録");
+                    addResponseData(KYOTUSYOSAI[21], "共通詳細データ修正処理");
+                }
+            }
+        } else {
+            // 共通詳細にデータがない場合は総合工事情報エンティティを生成
+            final N5Skiskj01Entity entityN5Skiskj01 =(N5Skiskj01Entity)getEntity(N5Skiskj01Entity.class);
+            // 総合工事情報参照の呼び出し
+            final List skj_list = entityN5Skiskj01.findSogokojikensaku(sekoCode,sogoBango,kojiBango);
+
+            // 検索結果を下り電文に設定
+            for( int item = 0; item < skj_list.size(); item++ ) {
+                Object[] skj_obj = (Object[])skj_list.get(item);
+                
+                addResponseData(KYOTUSYOSAI[3], skj_obj[0]);
+                addResponseData(KYOTUSYOSAI[4], skj_obj[2]);
+                addResponseData(KYOTUSYOSAI[5], skj_obj[2]);
+                addResponseData(KYOTUSYOSAI[6], "0");
+                addResponseData(KYOTUSYOSAI[7], skj_obj[3]);
+                addResponseData(KYOTUSYOSAI[8], skj_obj[4]);
+                addResponseData(KYOTUSYOSAI[9], skj_obj[1]);
+                addResponseData(KYOTUSYOSAI[10], skj_obj[5]);
+                addResponseData(KYOTUSYOSAI[12], null);
+                addResponseData(KYOTUSYOSAI[15], null);
+                addResponseData(KYOTUSYOSAI[16], null);                
+                addResponseData(KYOTUSYOSAI[17], null);
+                addResponseData(KYOTUSYOSAI[18], "0");
+            }                
+        }
+    }
+
+    /**
+     * <p>
+     * [概 要] 共通詳細登録
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 共通詳細情報を登録します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException 
+     */
+    public void kyotuToroku() throws SystemException, BusinessException {
+        
+        // クライアントから上り電文を取得し、DTOに設定
+        final N5Buikss01DTO dto = new N5Buikss01DTO();
+        dto.setsekoCode(getRequestData(KYOTUSYOSAI_TOROKU[0]));
+        dto.setsogoBango(getRequestData(KYOTUSYOSAI_TOROKU[1]));
+        dto.setkojiBango(getRequestData(KYOTUSYOSAI_TOROKU[2]));
+        dto.setsyonaiFlag(SGISNIFLG);
+        dto.setutiwakeSyubetu(getRequestData(KYOTUSYOSAI_TOROKU[3]));
+        dto.settonyuNengetu(getRequestData(KYOTUSYOSAI_TOROKU[4]));
+        dto.setsyutokuNengetu(getRequestData(KYOTUSYOSAI_TOROKU[5]));
+        dto.setenkadoSu(getRequestData(KYOTUSYOSAI_TOROKU[6]));
+        dto.settyakkoNengappi(getRequestData(KYOTUSYOSAI_TOROKU[7]));
+        dto.setsyunkoNengappi(getRequestData(KYOTUSYOSAI_TOROKU[8]));
+        dto.setkaisiNengetu(getRequestData(KYOTUSYOSAI_TOROKU[9]));
+        dto.setukeoiKaisya(getRequestData(KYOTUSYOSAI_TOROKU[10]));
+        dto.setsakusya(getRequestData(KYOTUSYOSAI_TOROKU[11]));
+        dto.setsagyoKantokuBango(getRequestData(KYOTUSYOSAI_TOROKU[12]));
+        dto.setkiji1(getRequestData(KYOTUSYOSAI_TOROKU[13]));
+        dto.setkiji2(getRequestData(KYOTUSYOSAI_TOROKU[14]));
+        dto.setkiji3(getRequestData(KYOTUSYOSAI_TOROKU[15]));
+        dto.setkiji4(getRequestData(KYOTUSYOSAI_TOROKU[16]));
+        dto.setutiwakeFlag(UTSFLG);
+        dto.setukewatasiFlag(UWSFLG);
+        dto.settfdsakuseiFlag(TFDSAKFLG);
+        dto.setukewatasikanryouFlag(UKWKNRFLG);
+
+        final String torokuFlag = getRequestData(KYOTUSYOSAI_TOROKU[17]);
+        final String sonkenFlag = getRequestData(KYOTUSYOSAI_TOROKU[18]);
+        
+        try {
+            
+            // 送信管理情報テーブルエンティティ生成
+            final N5Buismj01Entity entityN5Buismj = (N5Buismj01Entity) getEntity(N5Buismj01Entity.class);
+            
+            // 2017.12.08 ９次２期開発 追加 START
+            final String skflag = "0";
+            if( sonkenFlag.equals(skflag)) {
+                // 損益建設フラグが”建設”の場合
+            // 2017.12.08 ９次２期開発 追加 END
+                
+                // EDI未送信の変更区分を確認
+                if( entityN5Buismj.checkEDIMisousin(dto.getsekoCode(), dto.getsogoBango(), dto.getkojiBango()) != 0 ) {                
+                    // EDI未送信の変更区分が存在する場合
+                    Message msg = new Message("NNCW5057");
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+                }
+                
+            }
+            
+            // EDI未送信の変更区分（撤去データ）を確認
+            if( entityN5Buismj.checkEDIMisousinTekkyo(dto.getsekoCode(), dto.getsogoBango(), dto.getkojiBango()) != 0 ) {                
+                // EDI未送信の変更区分が存在する場合
+                if( sonkenFlag.equals(skflag)) {
+                    // 損益建設フラグが”建設”の場合、業務エラーとする
+                    Message msg = new Message("NNCW5057");
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+                }
+                
+                // EDI連携種別の設定
+                final String edirenkeiSB = "IP_N_TKBT";
+                // EDI連携制御定数エンティティ生成
+                final N5Edirenkei01Entity entityN5Edirenkei = (N5Edirenkei01Entity) getEntity(N5Edirenkei01Entity.class);
+                
+                // EDI連携の有無を確認
+                final String rkflag = "1";
+                if( entityN5Edirenkei.checkEDIRenkei(edirenkeiSB).equals(rkflag)) {
+                    // 連携フラグが”連携あり”の場合
+                    Message msg = new Message("NNCW5057");
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+                }
+                
+                // 連携フラグが”連携なし”の場合
+                Message msg = new Message("NNCW5103");
+                throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+            }
+            
+            final String flag = "0";
+            if( torokuFlag.equals(flag) ) { 
+                // 新規登録の場合は共通詳細登録の呼び出し
+                final N5Buikss01Entity entityN5Buikss01Toroku = (N5Buikss01Entity) getEntity(N5Buikss01Entity.class);
+                int count = entityN5Buikss01Toroku.addKyotuToroku(dto);
+                if ( count == 0 ) {
+                    String[] msgParam = {"共通詳細データ登録"};
+                    Message msg = new Message("NNCW0044", msgParam);
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+                }
+            } else {
+                // 更新登録の場合は共通詳細更新の呼び出し
+                final N5Buikss01Entity entityN5Buikss01Kosin = (N5Buikss01Entity) getEntity(N5Buikss01Entity.class);
+                int count = entityN5Buikss01Kosin.updateKyotuKosin(dto);
+                if ( count == 0 ) {
+                    Message msg = new Message("NNCW0007");
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku");
+                }
+            }
+            
+            /**********************************************************************************************/
+
+            final N5Buiutw01Entity entityN5Buiutw01 = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+            int Butudatacount = entityN5Buiutw01.updateUtwdataKaishinengetsu
+                (dto.getsekoCode(), dto.getsogoBango(), dto.getkojiBango());            
+            
+            if( log.isDebugEnabled() ) {
+                log.debug("updateButudataKaishinengetsu()#所内内訳書開始年月更新=" + Butudatacount);
+            }
+
+            /**********************************************************************************************/            
+
+        } catch ( UniqueKeyException e ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0003");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku()", e);
+        } catch ( ResourceBusyException e ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#kyotuToroku()", e);
+        }       
+    }
+    
+    //******共通詳細ここまで******//
+
+    //******工事内訳一覧ここから******//
+    
+    /**
+     * <p>
+     * [概 要] 内訳一覧検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳検索一覧を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @throws SystemException 
+     * @throws BusinessException 
+     */
+    public void utiwakeItiranKensaku() throws SystemException, BusinessException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeItiranKensaku() - start");
+        }
+
+        int aryIdx = 0;
+        
+        // クライアントから上り電文取得し、DTOに設定
+        N5UtiwakeKensaku01DTO dto = new N5UtiwakeKensaku01DTO();
+        dto.setSekoCode(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));     // 施工組織コード
+        dto.setSogoBango(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 総合工事番号
+        dto.setKojiBango(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 工事計画番号
+        dto.setCondItem1(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 検索条件項目1
+        dto.setCondItem2(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 検索条件項目2
+        dto.setCondItem3(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 検索条件項目3
+        dto.setCondItem4(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));    // 検索条件項目4
+        dto.setCond1(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));        // 検索条件1
+        dto.setCond2(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));        // 検索条件2
+        dto.setCond3(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));        // 検索条件3
+        dto.setCond4(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));        // 検索条件4
+        dto.setSortCond(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));     // ソート条件
+        dto.setCondChkFlg();    // 検索条件設定チェック
+        dto.setSonkenFlag(getRequestData(UTIWAKE_ITIRAN[aryIdx++]));   // 損益建設フラグ
+        dto.setKensakubtnFlg(getRequestData(UTIWAKE_ITIRAN[aryIdx++])); // 検索ボタン押下フラグ
+ 
+        String KensakubtnFlg;
+        if (dto.getKensakubtnFlg() == null){
+            KensakubtnFlg = "0";
+        } else {
+            KensakubtnFlg = dto.getKensakubtnFlg();
+        }
+        
+        // 共通詳細存在有無チェック及び内訳書フラグ判別
+        N5Buikss01Entity entityN5Buikss = (N5Buikss01Entity)getEntity(N5Buikss01Entity.class);
+        if( !entityN5Buikss.isKyotusyosai(dto) ) {
+            /* 設施41-0055対応 */
+            addResponseData(UTIWAKE_ITIRAN[17], "NNCW1100");
+            return;
+        }
+        
+        // 共通検索処理を呼出し
+        List retList = this.commonKensaku(dto);
+        
+        // 下り電文に設定
+        int recordCnt = retList.size();
+        addResponseData(UTIWAKE_ITIRAN[aryIdx++], Integer.valueOf(recordCnt));   // 検索件数
+        addResponseData(UTIWAKE_ITIRAN[aryIdx++], retList);                      // 検索結果
+        addResponseData(UTIWAKE_ITIRAN[aryIdx++], dto.getUtiwakesyoFlg());       // 内訳完成登録フラグ
+        
+        String btnFlg = "1";
+        if( recordCnt == 0 && !dto.isCondChkFlg() ) {
+            /* 設施41-0055対応 */
+            addResponseData(UTIWAKE_ITIRAN[17], "NNCW0007");
+        } else if (KensakubtnFlg.equals(btnFlg) && recordCnt >= 100){
+            // 検索ボタン押下時で結果が１００件以上の場合、画面で表示するメッセージをセットする。
+            addResponseData(UTIWAKE_ITIRAN[17], "NNCC0026");
+        }
+        
+        // 物品データ変更有無を確認
+        boolean chkFlg = checkHenkouData(dto.getSekoCode(), dto.getSogoBango(), dto.getKojiBango(), dto.getSonkenFlag());
+
+        if ( chkFlg ) {
+            // 変更された物品が存在する場合
+            addResponseData(UTIWAKE_ITIRAN[18], "あり");
+        }       
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeItiranKensaku() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] 所内内訳書削除処理。
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 所内内訳書テーブルおよび内訳データ変更情報テーブルのレコードを削除。
+     * </p>
+     * 
+     * <p>[備 考] </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException 
+     */
+    public void buppinSakujo() throws SystemException, BusinessException {
+
+        if( log.isDebugEnabled() ) {
+            log.debug("buppinSakujo() - start");
+        }
+        
+        // 電文インデックス
+        int aryIndex = 0;
+        
+        // メッセージID
+        String msgId = "";
+        
+        // クライアントから上り電文取得
+        final List tubanList    = getRequestListData(BUPPIN_SAKUJO[aryIndex++]);    // レコード通番
+        final String sekoCode   = getRequestData(BUPPIN_SAKUJO[aryIndex++]);        // 施工組織コード
+        final String sogoBango  = getRequestData(BUPPIN_SAKUJO[aryIndex++]);        // 総合工事番号
+        final String kojiBango  = getRequestData(BUPPIN_SAKUJO[aryIndex++]);        // 工事計画番号
+
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+        // 内訳データ変更情報エンティティ生成
+        final N5Buiuhj01Entity entityN5Buiuhj = (N5Buiuhj01Entity) getEntity(N5Buiuhj01Entity.class);
+
+        try {
+            // JTEST:JTC-92-001:BD.EXCEPT.NP-1/WARNIG
+            for(Iterator itr = tubanList.iterator(); itr.hasNext(); ) {
+                List tubanArray = (List)itr.next();
+                Object[] tuban = tubanArray.toArray();
+
+                // 件数取得処理
+                // 所内内訳書の削除件数を取得する
+                int count = entityN5Buiutw.countSakujoRecord(sekoCode, sogoBango, kojiBango, tuban[0]);
+                
+                // 削除対象が存在する場合
+                if( count > 0 ) {
+
+                    // 所内内訳書行ロック参照呼出し
+                    Object[] rowId = entityN5Buiutw.findByKeyUtiwakeRecordForUpdate(sekoCode, sogoBango, kojiBango, tuban[0]);                    
+                    // 所内内訳書レコード削除
+                    int delCount = entityN5Buiutw.deleteUtiwakeRecord(rowId);
+                    
+                    if( log.isDebugEnabled() ) {
+                        log.debug("buppinSakujo()#所内内訳書レコード削除件数=" + delCount);
+                    }
+
+                    // 内訳データ変更情報レコード行ロック参照呼出し
+                    rowId = entityN5Buiuhj.findByKeyUtiwakeRecordForUpdate(sekoCode, sogoBango, kojiBango, tuban[0]);
+                    // 内訳データ変更情報レコード削除
+                    delCount = entityN5Buiuhj.deleteUtiwakeRecord(rowId);
+                    if( log.isDebugEnabled() ) {
+                        log.debug("buppinSakujo()#内訳データ変更情報レコード削除件数=" + delCount);
+                    }
+
+                } else {
+                    
+                    if( log.isDebugEnabled() ) {
+                        log.debug("Error - MessageId is NNCW0007");
+                        log.debug("buppinSakujo() - end ");
+                    }
+                    
+                    // 業務エラーを設定
+                    Message message = new Message("NNCW0007");
+                    throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#buppinSakujo()");
+                }
+            }
+        } catch( ResourceBusyException e ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#buppinSakujo()", e);
+        }
+        
+        // 検索処理を呼出し
+        this.utiwakeItiranKensaku();
+        
+        // 下り電文に設定
+        addResponseData(BUPPIN_SAKUJO[aryIndex], msgId);   // メッセージID
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("buppinSakujo() - end ");
+        }
+    }
+        
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 内訳完成登録処理。
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 画面表示している施工組織コード・総合工事番号・工事計画番号の工事に対して<br/>
+     *         完成登録処理を行う。
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @throws SystemException 
+     * @throws BusinessException
+     */
+    public void utiwakeKanseitoroku() throws SystemException, BusinessException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeKanseitoroku() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(UTIWAKE_KANSEITOROKU[0]);    // 施工組織コード
+        final String sogoBango = getRequestData(UTIWAKE_KANSEITOROKU[1]);   // 総合工事番号
+        final String kojiBango = getRequestData(UTIWAKE_KANSEITOROKU[2]);   // 工事計画番号        
+        final String sonkenFlag = getRequestData(UTIWAKE_KANSEITOROKU[3]);  // 損益建設フラグ
+        
+        // 共通詳細エンティティ生成
+        final N5Buikss01Entity entityN5Buisniutw = (N5Buikss01Entity) getEntity(N5Buikss01Entity.class);
+        
+        // ストアドプロシージャ呼出し
+        final Object[] retParam = entityN5Buisniutw.kanseiTourokuStored(sekoCode, sogoBango, kojiBango, sonkenFlag);
+        
+        BigDecimal sqlCode = (BigDecimal)retParam[1];
+        
+        if( sqlCode.intValue() == -54 ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+        }
+        
+        if(COMPLETE.equals(retParam[0])) {
+            // ストアドプロシージャが正常終了の場合、下り電文にメッセージIDをセット
+            addResponseData(UTIWAKE_KANSEITOROKU[4], retParam[0]);
+        } else {
+            // システムエラーの場合
+            if(STORED_SYSTEM_ERR.equals(retParam[0])) {
+                this.setMessage(new Message((String)retParam[0]));
+                throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku");
+            }
+            
+            // 業務エラー："NNCW5058"の場合            
+            if(EXIST_NULL_DATA.equals(retParam[0])) {
+
+                // 業務エラーを設定
+                addResponseData(UTIWAKE_KANSEITOROKU[4], retParam[0]);
+                BigDecimal Choban = (BigDecimal)retParam[3];
+                addResponseData(UTIWAKE_KANSEITOROKU[5], Choban);
+                addResponseData(UTIWAKE_KANSEITOROKU[6], retParam[2]);
+            }
+
+            // 業務エラー："NNCW1105"の場合
+            if(BUPPIN_TOTAL_0.equals(retParam[0])) {
+                // 業務エラーを設定
+                Message message = new Message((String)retParam[0]);
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+            }
+
+            // 業務エラー："NNCW1102"の場合
+            if(SEKEI_MIKANRYO.equals(retParam[0])) {
+                // 業務エラーを設定
+                Message message = new Message((String)retParam[0]);
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+            }
+
+            // 業務エラー："NNCW1085"の場合
+            if(NOT_LAST_BUTSTS.equals(retParam[0])) {
+                // 業務エラーを設定
+                Message message = new Message((String)retParam[0]);
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+            }
+            
+/* ****** 2008/08/27 故施45M-0078 謝海峰 DEL START ***************************************************
+            // 業務エラー："NNCW5088"の場合
+            if(NOT_HENOUKANRYO.equals(retParam[0])) {
+                // 業務エラーを設定
+                Message message = new Message((String)retParam[0]);
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+            }
+
+            // 業務エラー："NNCW1084"の場合
+            if(NOT_KOJIZANPIN.equals(retParam[0])) {
+                // 業務エラーを設定
+                Message message = new Message((String)retParam[0]);
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeKanseitoroku()");
+            }
+   ****** 2008/08/27 故施45M-0078 謝海峰 DEL END *************************************************** */
+            
+        }
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeKanseitoroku() - end");
+        }
+        
+    }
+    
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 内訳完成登録解除処理。
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 完成登録済みの工事に対して<br/>
+     *         登録解除処理を行う。
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @throws SystemException 
+     * @throws BusinessException
+     */
+    public void kanseiTorokuKaijo() throws SystemException, BusinessException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("kanseiTorokuKaijo() - start");
+        }
+                
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(KANSEITOROKU_KAIJO[0]);    // 施工組織コード
+        final String sogoBango = getRequestData(KANSEITOROKU_KAIJO[1]);   // 総合工事番号
+        final String kojiBango = getRequestData(KANSEITOROKU_KAIJO[2]);   // 工事計画番号        
+
+        // 共通詳細エンティティ生成
+        final N5Buikss01Entity entityN5Buisniutw = (N5Buikss01Entity) getEntity(N5Buikss01Entity.class);
+        
+        // ストアドプロシージャ呼出し
+        final Object[] retParam = entityN5Buisniutw.torokuKaijoStored(sekoCode, sogoBango, kojiBango);
+        
+        BigDecimal sqlCode = (BigDecimal)retParam[2];
+        
+        if( sqlCode.intValue() == -54 ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#kanseiTorokuKaijo()");
+        }
+        
+        if(COMPLETE.equals(retParam[0])) {
+            // ストアドプロシージャが正常終了の場合、下り電文にメッセージIDをセット
+            addResponseData(UTIWAKE_KANSEITOROKU[4], retParam[0]);
+            addResponseData(KANSEITOROKU_KAIJO[4], retParam[1]);      // 埋込文字
+        } else {
+            if(STORED_SYSTEM_ERR.equals(retParam[0])){
+                // システムエラーの場合
+                this.setMessage(new Message((String)retParam[0]));
+                throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#kanseiTorokuKaijo()");
+            }
+            // 業務エラーの場合
+            final Message message = new Message((String)retParam[0]);
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#kanseiTorokuKaijo()");
+        }
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("kanseiTorokuKaijo() - end");
+        }
+
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 内訳CSV出力
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳CSVデータを作成し、共通APIをCALLする。
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @throws SystemException 
+     */
+    public void utiwakeCSV() throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeCSV() - start");
+        }
+        
+        // 電文インデックス
+        int denbunIndex = 0;
+        
+        // クライアントから上り電文取得し、DTOに設定
+        N5UtiwakeKensaku01DTO dto = new N5UtiwakeKensaku01DTO();        
+        final String sekoCode = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]); 
+        final String sekoName = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]);
+        final String sogoNumber = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]);
+        final String sogoName = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]);
+        final String kojiNumber = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]);
+        final String kojiName = getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]);
+        dto.setCondItem1(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));    // 検索条件項目1
+        dto.setCondItem2(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));    // 検索条件項目2
+        dto.setCondItem3(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));    // 検索条件項目3
+        dto.setCondItem4(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));    // 検索条件項目4
+        dto.setCond1(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));        // 検索条件1
+        dto.setCond2(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));        // 検索条件2
+        dto.setCond3(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));        // 検索条件3
+        dto.setCond4(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));       // 検索条件4
+        dto.setSortCond(getRequestData(CREATE_UTIWAKE_CSV[denbunIndex++]));    // ソート条件
+        dto.setCondChkFlg();    // 検索条件設定チェック
+        dto.setSekoCode(sekoCode);
+        dto.setSogoBango(sogoNumber);
+        dto.setKojiBango(kojiNumber);
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        
+        // CSVデータ取得
+        List csvData = entityN5Buiutw.findByKeyUtiwakeCSV(dto);
+
+        // CSV作成処理
+        StringBuilder csvBuilder = new StringBuilder();
+
+        final String D_QUOTE = "\"";
+        // ヘッダ部
+        for( int i = 0; i < UTIWAKE_HEADER.length; i++ ) {
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(UTIWAKE_HEADER[i]);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            
+            if( i < (UTIWAKE_HEADER.length - 1) ) {
+                csvBuilder = csvBuilder.append(COMMA);
+            } else {
+                csvBuilder = csvBuilder.append(RETURN);
+            }
+        }
+        
+        // データ部
+        for( Iterator itr = csvData.iterator(); itr.hasNext(); ) {
+            
+            // 上り電文項目を設定
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(sekoCode);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(sekoName);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(sogoNumber);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(sogoName);
+            csvBuilder = csvBuilder.append(D_QUOTE);
+            csvBuilder = csvBuilder.append(COMMA);
+            
+            Object[] record = (Object[])itr.next();
+            
+            // JTEST:PB.LOGIC.AOBO-2
+            int size = record.length - 1;
+            for(int i = 0; i < size; i++) {
+                
+                if( SURYO_INDEX != i ) {
+                    csvBuilder = csvBuilder.append(D_QUOTE);
+                    // データが数量以外の場合
+                    csvBuilder = csvBuilder.append(record[i] == null?"":record[i]);
+                    csvBuilder = csvBuilder.append(D_QUOTE);
+                } else {
+                    // データが数量の場合
+                    csvBuilder = formerSuryo(record, csvBuilder);
+                }
+                
+                if( WBS_INDEX == i ) {
+                    // データがWBSの場合
+                    csvBuilder = csvBuilder.append(COMMA);
+                    csvBuilder = csvBuilder.append(D_QUOTE);
+                    csvBuilder = csvBuilder.append(kojiName);
+                    csvBuilder = csvBuilder.append(D_QUOTE);
+                }
+                
+                if( i < (record.length - 2) ) {
+                    csvBuilder = csvBuilder.append(COMMA);
+                } else {
+                    csvBuilder = csvBuilder.append(RETURN);
+                }
+            }
+        }
+       
+        // 共通処理呼出し
+        this.commonCreateCsvStreamData(csvBuilder);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeCSV() - end");
+        }
+        
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 日計表CSV出力
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 日計表CSVデータを作成し、共通APIをCALLする。
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @throws SystemException 
+     */
+    public void nikkeihyoCSV() throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("nikkeihyoCSV() - start");
+        }
+        
+        // 電文インデックス
+        int denbunIndex = 0;
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(CREATE_NIKKEIHYO_CSV[denbunIndex++]); 
+        final String sogoNumber = getRequestData(CREATE_NIKKEIHYO_CSV[denbunIndex++]);
+        final String kojiNumber = getRequestData(CREATE_NIKKEIHYO_CSV[denbunIndex++]);
+
+        // 物品要求エンティティを作成
+        final N5Buibyk01Entity entityN5Buibyk = (N5Buibyk01Entity) getEntity(N5Buibyk01Entity.class);
+        
+        // 検索処理実行
+        List retList = entityN5Buibyk.findByKeyNikkeihyoCSV(sekoCode, sogoNumber, kojiNumber); 
+        
+        StringBuilder builder = new StringBuilder();
+        // ヘッダタイトル
+        for( int i = 0; i < NIKKEIHYO_HEADER.length; i++ ) {
+            
+            builder = builder.append(NIKKEIHYO_HEADER[i]);            
+            if( i < (NIKKEIHYO_HEADER.length - 1) ) {
+                builder = builder.append(COMMA);
+            } else {
+                builder = builder.append(RETURN);
+            }
+        }
+
+        // データ部
+        for( Iterator recordItr = retList.iterator(); recordItr.hasNext(); ) {
+            
+            Object[] dataArray = (Object[])recordItr.next();
+            for(int i = 0; i < dataArray.length; i++ ) {
+                builder = builder.append(dataArray[i] == null?"":dataArray[i]);
+                if( i < (dataArray.length - 1) ) {
+                    builder = builder.append(COMMA);
+                } else {
+                    builder = builder.append(RETURN);
+                }
+            }
+        }
+        
+        // 共通処理呼出し
+        this.commonCreateCsvStreamData(builder);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("nikkeihyoCSV() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] 帳票用内訳CSVデータ作成処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 帳票用に内訳CSVデータを作成します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException
+     */
+    public void utiwakesyoCSV4Tyohyo() throws SystemException, BusinessException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakesyoCSV4Tyohyo() - start");
+        }
+        // クライアントからの上り電文を取得
+        final String sekoCode = getRequestData(UTIWAKESYOCSV[0]);
+        final String sogoBango = getRequestData(UTIWAKESYOCSV[1]);
+        final String kojiBango = getRequestData(UTIWAKESYOCSV[2]);
+        
+        // クライアントから上り電文取得し、DTOに設定
+        N5UtiwakeKensaku01DTO dto = new N5UtiwakeKensaku01DTO();
+        dto.setSekoCode(sekoCode);      // 施工組織コード
+        dto.setSogoBango(sogoBango);    // 総合工事番号
+        dto.setKojiBango(kojiBango);    // 工事計画番号
+        dto.setCondItem1("");    // 検索条件項目1
+        dto.setCondItem2("");    // 検索条件項目2
+        dto.setCondItem3("");    // 検索条件項目3
+        dto.setCondItem4("");    // 検索条件項目4
+        dto.setCond1("");        // 検索条件1
+        dto.setCond2("");        // 検索条件2
+        dto.setCond3("");        // 検索条件3
+        dto.setCond4("");        // 検索条件4
+        dto.setSortCond("");     // ソート条件
+        dto.setCondChkFlg();    // 検索条件設定チェック
+        
+
+        // 共通詳細存在有無チェック及び内訳書フラグ判別
+        N5Buikss01Entity entityN5Buikss = (N5Buikss01Entity)getEntity(N5Buikss01Entity.class);
+        
+        entityN5Buikss.isKyotusyosai(dto);
+
+        final String kanseiFlg = dto.getUtiwakesyoFlg();       // 内訳完成登録フラグ
+
+        // 処理区分取得（オンラインの場合は、NULL）
+        final String strSyrSbt = this.getRequestData(D_SYRSBT);
+        
+        // パラメータ変数
+        String strJobId = "";           // JOBID
+        String csvFile = "";            // CSVファイル名
+        String outFile = "";            // 出力ファイル名
+        int intDisposalType = 0;    // 帳票区分
+        final String processTime = DateUtil.getDate("hhmmss");  // 処理時間
+        
+        // CSVファイル名
+        csvFile = this.getCenterCode() + "P316020010" + this.getUserID() + processTime + ".csv";
+        
+        // バッチ処理からの呼び出しの場合
+        if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+            // 一般計画工事共通ロジック生成
+            N5300000_CommonLogic commonLogic = (N5300000_CommonLogic) getLogic(N5300000_CommonLogic.class);
+            // 添付ファイルの場合は、７年保存帳票一連番号シーケンス（N5_SEQ44）から取得する
+            final String strRecseq = commonLogic.n5300000_GetSequence("N5_SEQ44");
+            
+            strJobId = "P316020010P";
+            outFile = "IPPN"
+                    + sekoCode
+                    + sogoBango
+                    + StringUtils.leftPad(kojiBango.replace("-", ""), 17, "0")
+                    + "0"
+                    + StringUtils.leftPad(strRecseq, 10, "0") 
+                    + getCenterCode()
+                    + "P316020010.pdf";
+
+            intDisposalType = C_SYRKBN_BAT;
+        }
+        // オンライン処理からの呼び出しの場合
+        else {
+            strJobId = "P316020010E";
+            outFile = "P316020010" + this.getUserID() + processTime + ".emf";
+            intDisposalType = C_SYRKBN_ONLINE;
+        }
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        // 帳票検索の呼び出し
+        final List list = entityN5Buiutw.findByKeyTyohyoKensaku(sekoCode,sogoBango,kojiBango);
+        
+        if (list.size() == 0) {
+            
+            // バッチ処理からの呼び出しの場合
+            if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+                // リターンコード                
+                this.addResponseData(D_B_RTN, "100");
+                
+                // ファイル名
+                // ST UPD baba 2008/05/14
+                // this.addResponseData(D_B_OUT_FILE_NAME, outFile);
+                this.addResponseData(D_B_OUT_FILE_NAME, "NNCW0007");
+                
+                // エラー内容
+                this.addResponseData(D_B_ERRNAI, "出力対象の帳票がありませんでした");
+                return;
+            }
+            
+            // 取得結果が０件の場合、業務エラーを発行
+            throw new BusinessException(new Message("NNCW0007")
+                    , "SyonaiUtiwakesyoSakuseiLogic#utiwakesyoCSV4Tyohyo()");
+        }
+                
+        // 出力用CSVファイルパス
+        final String csvFilePath = SystemUtil.getSystemInfo("print.data.path") + csvFile;    
+        
+        // ファイル入出力コンストラクタ
+        FileIoUtil fileout = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
+        
+        //タイトル行出力
+        fileout.writeFileString("\"header\",\"" + "YEAR" + "\",\"" + "MONTH" + "\",\""+ "DAY" + "\",\"" +
+                                "CHECKSHEET" + "\",\"" + 
+                                "UWSCLS" + "\",\"" + "SYORISOSIKI" + "\",\"" + "KKN" + "\",\"" +
+                                "EKDTIM_SU" + "\",\"" +  "CKOYMD" + "\",\"" + "SHKYMD" + "\",\"" +
+                                "GYOSYAMEI" + "\",\"" + "SAKSYA_NM" + "\",\"" + "TUTIBANGO" + "\",\"" +
+                                "HONSYA_SOSIKI" + "\",\"" + "HONSYA_KN" + "\",\"" + "KJI001" + "\",\"" +
+                                "KJI002" + "\",\"" + "KJI003" + "\",\"" + "KJI004" + "\",\"" +
+                                "BIL_NM" + "\",\"" + "ZOG" + "\",\"" + "KANRISEKININSYA" + "\",\"" +
+                                "SYUYOKUCODE" + "\",\"" + "TUBAN" + "\",\"" + "SV_CD" + "\",\"" +
+                                "ITM" + "\",\"" + "KANRIKUBUN" + "\",\"" + "SBI" + "\",\"" +
+                                "SYU" + "\",\"" + "SMK" + "\",\"" + "SBN" + "\",\"" + "SEIRICODE" + "\",\"" +
+                                "HKK_CD" + "\",\"" + "KOB_CD" + "\",\"" + "HTIUTW_NM" + "\",\"" +
+                                "KND" + "\",\"" + 
+                                "SYM" + "\",\"" + /*開始年月追加*/
+                                "FRA" + "\",\"" + "GUN" + "\",\"" + "HAITIBANGO" + "\",\"" +
+                                "KMISTM_NM" + "\",\"" + "BANGO" + "\",\"" + "HONTAIKOSE" + "\",\"" +
+                                "KANA_NM" + "\",\"" + "AB_LEN" + "\",\"" + "BUTU_CD" + "\",\"" +
+                                "HONTAI_SURYO" + "\",\"" + "KOSE_SURYO" + "\",\"" + "SINSETU_SURYO" + "\",\"" +
+                                "TEKKYO_SURYO" + "\",\"" + "TAK" + "\",\"" + "GOK" + "\",\"" + "KJIUTW" + "\",\"" +
+                                "KMISTM_NM2" + "\",\"" + "BANGO2" + "\"",true); /*架名装置名２、装置番号追加*/
+        
+        //検索結果のレコードを取得
+        for( int item = 0; item < list.size(); item++ ) {
+            Object[] obj = (Object[])list.get(item);
+            String[] str = new String[53];           
+                      
+            // Object変数をString変数へ変換 
+            for( int i = 0; i < 53; i++ ) {
+                if( obj[i] == null ) {
+                    obj[i] = "";
+                }
+                str[i] = obj[i].toString();
+            }
+            // 検索結果先頭行のレコードのみ
+            if( item == 0 ) {    
+                
+                String Flg = "0";
+                
+                if (kanseiFlg.equals(Flg)) {
+                    // 完成登録前（チェックシートあり）
+                    fileout.writeFileString("\"*\",\"" + str[0] + "\",\"" + str[1] + "\",\"" + str[2] + "\",\"" +
+                                            "チェックシート" + "\",\"" + 
+                                            str[3] + "\",\"" + str[4] + "\",\"" + kojiBango + "\",\"" +
+                                            str[5] + "\",\"" + str[6] + "\",\"" + str[7] + "\",\"" +
+                                            str[8] + "\",\"" + str[9] + "\",\"" + str[10] + "\",\"" + str[11] + "\",\"" +
+                                            str[12] + "\",\"" + str[13] + "\",\"" + str[14] + "\",\"" + str[15] + "\",\"" +
+                                            str[16] + "\"" ,true );                    
+                } else {
+                    // 完成登録後（チェックシートなし）
+                    //ヘッダ行出力
+                    fileout.writeFileString("\"*\",\"" + str[0] + "\",\"" + str[1] + "\",\"" + str[2] + "\",\"" +
+                                            "" + "\",\"" + 
+                                            str[3] + "\",\"" + str[4] + "\",\"" + kojiBango + "\",\"" +
+                                            str[5] + "\",\"" + str[6] + "\",\"" + str[7] + "\",\"" +
+                                            str[8] + "\",\"" + str[9] + "\",\"" + str[10] + "\",\"" + str[11] + "\",\"" +
+                                            str[12] + "\",\"" + str[13] + "\",\"" + str[14] + "\",\"" + str[15] + "\",\"" +
+                                            str[16] + "\"" ,true );                    
+                }
+            }
+            // 当該レコードのデータ部出力
+            for( int i = 17; i < 52; i++ ) {
+                if (str[i] == null) {
+                    fileout.writeFileString("\"\",",false);
+                }else {
+                    fileout.writeFileString("\"" + str[i] + "\",",false);
+                }
+            }
+            if (str[52] == null) {
+                fileout.writeFileString("\"\"",true);
+            }else {
+                fileout.writeFileString("\"" + str[52] + "\"",true);
+            }
+        }      
+        
+        fileout.closeFile();
+        
+        // 帳票作成連携機能の実行        
+        ReportCreator create = new ReportCreator();        
+        create.execute(strJobId, intDisposalType, csvFile, outFile, this.getCenterCode());       
+        
+        // バッチ処理からの呼び出しの場合
+        if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+            this.addResponseData(D_B_OUT_FILE_NAME, outFile);
+            this.addResponseData(D_B_RTN, "0");
+            this.addResponseData(D_B_ERRNAI, "");
+        } else {
+            // 下り電文に印刷イメージファイル名を設定
+            addResponseData(UTIWAKESYOCSV[3], outFile);
+        }
+
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakesyoCSV4Tyohyo() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] 内訳書データ更新
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 物品データ変更内容を所内内訳書に反映します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException
+     */
+   public void updateUtiwake() throws SystemException, BusinessException { 
+
+        if( log.isDebugEnabled() ) {
+            log.debug("updateUtiwake() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(UTIWAKE_KOUSIN[0]);    // 施工組織コード
+        final String sogoBango = getRequestData(UTIWAKE_KOUSIN[1]);   // 総合工事番号
+        final String kojiBango = getRequestData(UTIWAKE_KOUSIN[2]);   // 工事計画番号
+        // 2017.12.08 ９次２期開発 追加 START
+        final String sonkenFlag = getRequestData(UTIWAKE_KOUSIN[3]);  // 損益建設フラグ
+        // 2017.12.08 ９次２期開発 追加 END
+        final String prcKbn = getRequestData(UTIWAKE_KOUSIN[4]);      // 処理区分
+
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+        // 2017.12.08 ９次２期開発 削除 START
+        // 2010.10.20 故施58P-0018 装置番号4桁対応
+        // 東西判定
+        //String eastWest = getEastWest();
+        // 2017.12.08 ９次２期開発 削除 END
+
+        // ストアドプロシージャ呼出し
+        // 2017.12.08 ９次２期開発 修正 START
+        //final Object[] retParam = entityN5Buiutw.updateUtiwakeStored(sekoCode, sogoBango, kojiBango, prcKbn, eastWest);
+        final Object[] retParam = entityN5Buiutw.updateUtiwakeStored(sekoCode, sogoBango, kojiBango, sonkenFlag, prcKbn);
+        // 2017.12.08 ９次２期開発 修正 END
+        
+        BigDecimal sqlCode = (BigDecimal)retParam[1];
+
+        
+        if( sqlCode.intValue() == -54 ) {
+            // 業務エラーを設定
+            // 排他失敗
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#updateUtiwake()");
+        }
+
+        if(COMPLETE.equals(retParam[0])) {
+            // ストアドプロシージャが正常終了の場合、下り電文にメッセージIDをセット
+            addResponseData(UTIWAKE_KOUSIN[5], retParam[0]);
+        } else {
+            // システムエラーの場合
+            if(STORED_SYSTEM_ERR.equals(retParam[0])) {
+                this.setMessage(new Message((String)retParam[0]));
+                throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#updateUtiwake");
+            }
+        }
+
+        if( log.isDebugEnabled() ) {
+            log.debug("updateUtiwake() - end");
+        }
+    }
+   
+   /**
+    * <p>
+    * [概 要] 物品データの変更有無を確認
+    * </p>
+    * 
+    * <p>
+    * [詳 細] 物品データの変更有無を確認します
+    * </p>
+    * 
+    * <p>
+    * [備 考]
+    * </p>
+    *
+    * @param sekoCode  施工組織番号
+    * @param sogoBango 総合工事番号
+    * @param kojiBango 工事計画番号
+    * @param sonkenFlag 損建フラグ
+    * @return 物品データ変更有無
+    * @throws SystemException
+    * @throws BusinessException
+    */
+   public boolean checkHenkouData(final String sekoCode,final String sogoBango, 
+                                    final String kojiBango, final String sonkenFlag)
+       throws SystemException, BusinessException {
+  
+       if( log.isDebugEnabled() ) {
+           log.debug("checkHenkouData() - start");
+       }
+       
+       int count = 0;
+       final String flag = "0";
+       boolean chkFlg = false;
+       
+       if( sonkenFlag.equals(flag) ) {
+           // 画面上の損建区分が建設の場合
+           // 物品要求エンティティを作成
+           final N5Buibyk01Entity entityN5Buibyk = (N5Buibyk01Entity) getEntity(N5Buibyk01Entity.class);
+
+           // 物品要求レコードの追加物品検索
+           count += entityN5Buibyk.checkAddBykRecord(sekoCode, sogoBango, kojiBango);
+
+           // 物品要求レコードの削除物品検索            
+           count += entityN5Buibyk.checkDeleteBykRecord(sekoCode, sogoBango, kojiBango);
+
+           // 物品要求レコードの単価別分割物品検索            
+           count += entityN5Buibyk.checkBunkatuRecord(sekoCode, sogoBango, kojiBango);
+           
+           // 物品要求レコードの単価別統合物品検索            
+           count += entityN5Buibyk.checkTougouRecord(sekoCode, sogoBango, kojiBango);
+
+           // 物品要求レコードの日計表読込物品検索            
+           count += entityN5Buibyk.checkNikkeihyoYomikomiRecord(sekoCode, sogoBango, kojiBango);
+
+           // 物品要求レコードのデータ変更物品検索            
+           count += entityN5Buibyk.checkHenkouBykRecord(sekoCode, sogoBango, kojiBango);
+       } else {
+           // 画面上の損建区分が損益の場合
+           // 撤去_在庫データ登録エンティティを作成
+           final N5Buitzk01Entity entityN5Buitzk = (N5Buitzk01Entity) getEntity(N5Buitzk01Entity.class);
+
+           // 撤去_在庫データ登録レコードの追加物品検索
+           count += entityN5Buitzk.checkAddTzkRecord(sekoCode, sogoBango, kojiBango);
+
+           // 撤去_在庫データ登録レコードの削除物品検索            
+           count += entityN5Buitzk.checkDeleteTzkRecord(sekoCode, sogoBango, kojiBango);
+
+           // 撤去_在庫データ登録レコードのデータ変更物品検索            
+           count += entityN5Buitzk.checkHenkouTzkRecord(sekoCode, sogoBango, kojiBango);
+       }       
+       
+       if (count > 0) {
+           chkFlg = true;
+       }      
+       
+       if( log.isDebugEnabled() ) {
+           log.debug("checkHenkouData() - end");
+       }
+       
+       return chkFlg;
+       
+   }
+   
+   
+   
+   /**
+    * <p>
+    * [概 要] 物品データ変更情報CSVデータファイル作成
+    * </p>
+    * 
+    * <p>
+    * [詳 細] 帳票用に物品データ変更情報CSVファイルを作成します
+    * </p>
+    * 
+    * <p>
+    * [備 考]
+    * </p>
+    *
+    * @throws SystemException
+    * @throws BusinessException
+    */
+   public void printBuppinDataHenkouList() throws SystemException, BusinessException {
+       
+       if( log.isDebugEnabled() ) {
+           log.debug("printBuppinDataHenkouList() - start");
+       }
+       // クライアントからの上り電文を取得
+       final String sekoCode = getRequestData(BUPDATAHENKOUCSV[0]);   // 施工組織コード
+       final String sogoBango = getRequestData(BUPDATAHENKOUCSV[1]);  // 総合工事番号
+       final String kojiBango = getRequestData(BUPDATAHENKOUCSV[2]);  // 工事計画番号
+       //
+       final String sekoMei = getRequestData(BUPDATAHENKOUCSV[3]);    // 施工組織名
+       final String sogoMei = getRequestData(BUPDATAHENKOUCSV[4]);    // 総合工事名
+       final String kojiMei = getRequestData(BUPDATAHENKOUCSV[5]);    // 工事名
+       // 2017.12.08 ９次２期開発 追加 START
+       final String sonkenFlag = getRequestData(BUPDATAHENKOUCSV[6]); // 損益建設フラグ
+       // 2017.12.08 ９次２期開発 追加 END
+       //
+       final String prcKbn = getRequestData(BUPDATAHENKOUCSV[7]);     // 処理区分
+
+       // 所内内訳書エンティティ生成
+       final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+       // 2017.12.08 ９次２期開発 削除 START
+       // 2010.10.20 故施58P-0018 装置番号4桁対応
+       // 東西判定
+       //String eastWest = getEastWest();
+       // 2017.12.08 ９次２期開発 削除 END
+
+       // ストアドプロシージャ呼出し
+       // 2017.12.08 ９次２期開発 修正 START
+       // final Object[] retParam = entityN5Buiutw.updateUtiwakeStored(sekoCode, sogoBango, kojiBango, prcKbn, eastWest);
+       final Object[] retParam = entityN5Buiutw.updateUtiwakeStored(sekoCode, sogoBango, kojiBango, sonkenFlag, prcKbn);
+       // 2017.12.08 ９次２期開発 修正 END
+       
+       BigDecimal sqlCode = (BigDecimal)retParam[1];
+
+       if( sqlCode.intValue() == -54 ) {
+           // 業務エラーを設定
+           // 排他失敗
+           Message message = new Message("NNCW0005");
+           throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#printBuppinDataHenkouList()");
+       }
+
+       if(COMPLETE.equals(retParam[0])) {
+           // ストアドプロシージャが正常終了の場合、下り電文にメッセージIDをセット
+           addResponseData(UTIWAKE_KOUSIN[5], retParam[0]);
+       } else {
+           // システムエラーの場合
+           if(STORED_SYSTEM_ERR.equals(retParam[0])) {
+               this.setMessage(new Message((String)retParam[0]));
+               throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#printBuppinDataHenkouList");
+           }
+       }
+
+       // 処理区分取得（オンラインの場合は、NULL）
+       final String strSyrSbt = this.getRequestData(D_SYRSBT);
+       
+       // パラメータ変数
+       String strJobId = "";           // JOBID
+       String csvFile = "";            // CSVファイル名
+       String outFile = "";            // 出力ファイル名
+       int intDisposalType = 0;    // 帳票区分
+       final String processTime = DateUtil.getDate("hhmmss");  // 処理時間
+       
+       // CSVファイル名
+       csvFile = this.getCenterCode() + "P316020020" + this.getUserID() + processTime + ".csv";
+
+       // バッチ処理からの呼び出しの場合
+       if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+           // 一般計画工事共通ロジック生成
+           N5300000_CommonLogic commonLogic = (N5300000_CommonLogic) getLogic(N5300000_CommonLogic.class);
+           // 添付ファイルの場合は、７年保存帳票一連番号シーケンス（N5_SEQ44）から取得する
+           final String strRecseq = commonLogic.n5300000_GetSequence("N5_SEQ44");
+           
+           strJobId = "P316020020P";
+           outFile = "IPPN"
+                   + sekoCode
+                   + sogoBango
+                   + StringUtils.leftPad(kojiBango.replace("-", ""), 17, "0")
+                   + "0"
+                   + StringUtils.leftPad(strRecseq, 10, "0") 
+                   + getCenterCode()
+                   + "P316020020.pdf";
+
+           intDisposalType = C_SYRKBN_BAT;
+       }
+       // オンライン処理からの呼び出しの場合
+       else {
+           strJobId = "P316020020E";
+           outFile = "P316020020" + this.getUserID() + processTime + ".emf";
+           intDisposalType = C_SYRKBN_ONLINE;
+       }
+       
+       // 帳票検索の呼び出し
+       final List list = entityN5Buiutw.findByBuppinDataHenkouList(sekoCode,sogoBango,kojiBango);
+       
+       if (list.size() == 0) {
+           
+           // バッチ処理からの呼び出しの場合
+           if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+               this.addResponseData(D_B_RTN, "100");
+               this.addResponseData(D_B_ERRNAI, "出力対象の帳票がありませんでした");
+               return;
+           }
+           
+           // 取得結果が０件の場合、業務エラーを発行
+           throw new BusinessException(new Message("NNCW0007")
+                   , "SyonaiUtiwakesyoSakuseiLogic#printBuppinDataHenkouList()");
+       }
+
+       // 出力用CSVファイルパス
+       final String csvFilePath = SystemUtil.getSystemInfo("print.data.path") + csvFile;    
+       
+       // ファイル入出力コンストラクタ
+       FileIoUtil fileout = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
+       
+       //タイトル行出力
+       fileout.writeFileString("\"header\",\"" + "SKS_CD" + "\",\"" + "SKS_NM" + "\",\""+ "SKJBAN" + "\",\"" +
+                               "SKJ_NM" + "\",\"" + "KKN" + "\",\"" + "KOJ_NM" + "\",\"" +
+                               "SAK_HI" + "\",\"" + "CHOBAN" + "\",\"" + "BIL_NM" + "\",\"" +
+                               "UNTHAIBAN" + "\",\"" + "KMISTM" + "\",\"" + "KABSUIBAN" + "\",\"" +
+                               "BUT_CD" + "\",\"" + "SRO" + "\",\"" + "AB_LEN" + "\",\"" +
+                               "MAK_CD" + "\",\"" + "YOUCLS" + "\",\"" + "ZSBFLG" + "\",\"" +
+                               "TAK" + "\",\"" + "GOK" + "\",\"" + "HNKNAI" + "\",\"" +
+                               "BUTSTS" + "\"",true);
+       
+       //検索結果のレコードを取得
+       for( int item = 0; item < list.size(); item++ ) {
+           Object[] obj = (Object[])list.get(item);
+           String[] str = new String[16];             
+                     
+           // Object変数をString変数へ変換 
+           for( int i = 0; i < 16; i++ ) {
+               if( obj[i] == null ) {
+                   obj[i] = "";
+               }
+               str[i] = obj[i].toString();
+           }
+           // 検索結果先頭行のレコードのみ
+           if( item == 0 ) {            
+               //ヘッダ行出力
+               fileout.writeFileString("\"*\",\"" + sekoCode + "\",\"" + sekoMei + "\",\"" + sogoBango + "\",\"" +
+                                       sogoMei + "\",\"" + kojiBango + "\",\"" + kojiMei + "\",\"" +
+                                       str[0] + "\"" ,true );
+           }
+           // 当該レコードのデータ部出力
+           for( int i = 1; i < 15; i++ ) {
+               if (str[i] == null) {
+                   fileout.writeFileString("\"\",",false);
+               }else {
+                   fileout.writeFileString("\"" + str[i] + "\",",false);
+               }
+           }
+           if (str[15] == null) {
+               fileout.writeFileString("\"\"",true);
+           }else {
+               fileout.writeFileString("\"" + str[15] + "\"",true);
+           }
+       }      
+       
+       fileout.closeFile();
+       
+       // 帳票作成連携機能の実行        
+       ReportCreator create = new ReportCreator();        
+       create.execute(strJobId, intDisposalType, csvFile, outFile, this.getCenterCode());       
+       
+       // バッチ処理からの呼び出しの場合
+       if (C_SYRSBT_BAT.equals(strSyrSbt) ) {
+           this.addResponseData(D_B_OUT_FILE_NAME, outFile);
+           this.addResponseData(D_B_RTN, "0");
+           this.addResponseData(D_B_ERRNAI, "");
+       } else {
+           // 下り電文に印刷イメージファイル名を設定
+           addResponseData(BUPDATAHENKOUCSV[8], outFile);
+       }
+
+       if( log.isDebugEnabled() ) {
+           log.debug("printBuppinDataHenkouList() - end");
+       }
+   }
+   
+    //******工事内訳一覧ここまで******//
+    
+    
+    //******追加・修正・一括修正ここから******//
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 初期処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 追加・修正・一括修正画面での初期処理
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */  
+    public void utiwakeKensaku() throws SystemException {
+
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeKensaku() - start");
+        }
+        // 増減科目リスト取得
+        this.setPulldownlist();
+        // 画面情報取得
+        this.gamensettei();
+
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeKensaku() - end");
+        }
+        
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 画面表示処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳書追加、修正、一括修正の表示
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void gamensettei() throws SystemException {
+
+        if( log.isDebugEnabled() ) {
+            log.debug("gamensettei() - start");
+        }       
+        
+        // クライアントから上り電文取得
+        final List tubanList = getRequestListData(GAMEN_SETTEI[0]);        // レコード通番 
+        final String sekoCode = getRequestData(GAMEN_SETTEI[1]);           // 施工組織コード
+        final String sogoBango = getRequestData(GAMEN_SETTEI[2]);          // 総合工事番号
+        final String kojiBango = getRequestData(GAMEN_SETTEI[3]);          // 工事計画番号
+        final String syorikubun_flg = getRequestData(GAMEN_SETTEI[5]);     // 処理区分フラグ        
+        
+        // レコード通番格納変数
+        Object[] recordTuban = null;
+        String utiwakeRecord = null;
+        String retStrings3 = "";
+        
+        // レコード格納用配列
+        Object[] retStrings2 = null;
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+        // 所内固定資産定数エンティティ作成
+        final N5Budsnikos01Entity entityN5Budsnikos = (N5Budsnikos01Entity) getEntity(N5Budsnikos01Entity.class);
+        
+        // 含み工事情報エンティティ作成
+        final N5Skifkj01Entity entityN5Skifkj = (N5Skifkj01Entity) getEntity(N5Skifkj01Entity.class);
+        
+        if (SYORI_KUBUN_TUIKA.equals(syorikubun_flg) || SYORI_KUBUN_KOSIN.equals(syorikubun_flg)) {
+        
+            // 検索処理呼出し
+            Iterator itr = tubanList.iterator();
+            if( itr.hasNext() ) {
+                // レコード通番取得
+                List tubanArray = (List)itr.next();
+                recordTuban = tubanArray.toArray();
+                utiwakeRecord = (String)recordTuban[0];
+                
+                retStrings2 = entityN5Buiutw.gamensettei2(sekoCode, sogoBango, kojiBango, utiwakeRecord);
+
+                Date kikankaisi = null;
+                Date kikanryo = null;
+                Date syunkoymd = null;
+                
+                if( retStrings2[48] != null ) {
+                    kikankaisi = DateUtil.stringToDate(retStrings2[48].toString().replaceAll("-",""));
+                }
+                if( retStrings2[49] != null ) {
+                    kikanryo = DateUtil.stringToDate(retStrings2[49].toString().replaceAll("-",""));
+                }
+                if( retStrings2[52] != null ) {
+                    syunkoymd = DateUtil.stringToDate(retStrings2[52].toString().replaceAll("-",""));
+                }
+                
+                if( kikankaisi != null && kikanryo != null && syunkoymd != null ) {
+                    // JTEST:OPT.USCL-2
+                    if (syunkoymd.compareTo(kikankaisi) >= 0 && syunkoymd.compareTo(kikanryo) <= 0){
+                        retStrings3 = "あり" ;
+                    }
+                }
+                
+                addResponseData(GAMEN_SETTEI[66], retStrings3);
+   
+                //JTEST:PB.LOGIC.AOBO-2
+                int size = retStrings2.length-1;
+                for(int i = 0 ; i < size ; i++) {
+                    addResponseData(GAMEN_SETTEI[i+6],(retStrings2[i]==null)?"":retStrings2[i]);
+                }
+
+                // 装置名種別名取得処理
+                String sotiName = entityN5Budsnikos.getSotimeisyubetumei(retStrings2[24], retStrings2[23]);
+                // 装置名種別取得処理
+                String sotiSyubetu = entityN5Budsnikos.getSotimeisyubetu(retStrings2[24], retStrings2[23]);
+                
+                addResponseData(GAMEN_SETTEI[70], sotiName);      // 装置名種別名
+                addResponseData(GAMEN_SETTEI[71], sotiSyubetu);   // 装置名種別
+                
+            } else {
+                for(int i = 0 ; i < (GAMEN_SETTEI.length-6) ; i++) {
+                    addResponseData(GAMEN_SETTEI[i+6],"");
+                }
+                //管理責任者コード（新）取得処理
+                String kanrisekininsyacode = entityN5Skifkj.selectkanrisekininsyacode(sekoCode, sogoBango, kojiBango);
+                addResponseData(GAMEN_SETTEI[8], kanrisekininsyacode);
+                //管理責任者コード（新）取得処理
+                String hokankacode = entityN5Skifkj.selecthokankacode(sekoCode, sogoBango, kojiBango);
+                addResponseData(GAMEN_SETTEI[40], hokankacode);
+            }
+            
+        } else {
+            
+            // レコード格納用配列
+            Object[] baseRecord = null;
+            Object[] tmpRecord = null;
+            // 検索処理呼出し
+            for( Iterator itr = tubanList.iterator(); itr.hasNext(); ) {
+                // レコード通番取得
+                List tubanArray = (List)itr.next();
+                recordTuban = tubanArray.toArray();
+                utiwakeRecord = (String)recordTuban[0];
+                tmpRecord = entityN5Buiutw.gamensettei2(sekoCode, sogoBango, kojiBango, utiwakeRecord);
+                
+                if( baseRecord == null ) {
+                    // 初回の場合
+                    baseRecord = tmpRecord;
+                    
+                } else {
+                    // 初回以降の場合
+                    baseRecord = this.diffCheck( baseRecord, tmpRecord );
+
+                }
+            }
+            
+            if( baseRecord == null ) {
+                // データが存在しない場合、メッセージIDを設定して処理終了
+                addResponseData("MSGID", "NNCW0007");
+                return;
+            }
+            
+            for(int i = 0 ; i < 59 ; i++) {
+                addResponseData(IKKATU_SYUSEI[i+6],(baseRecord[i]==null)?"":baseRecord[i]); 
+            }
+
+            addResponseData(GAMEN_SETTEI[66], "");
+            addResponseData(GAMEN_SETTEI[70], "");      // 装置名種別名
+            addResponseData(GAMEN_SETTEI[71], "");      // 装置名種別
+        }
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("gamensettei() - end");
+        }
+    
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 同値チェック。
+     * </p>
+     * 
+     * <p>
+     * [詳 細] レコード1件1件に対して、値が同じかどうかをチェックする
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @param baseRecord
+     * @param currentRecord
+     * @return tmpRecord
+     */
+    private Object[] diffCheck(final Object[] baseRecord, final Object[] currentRecord ) {
+        
+        Object[] tmpRecord = baseRecord;
+        
+        // カラム件数分ループ
+        for (int i = 0; i < tmpRecord.length; i++ ) {
+
+            // 更新カウンタはレコードに保持
+            if( i == (tmpRecord.length - 1) ) {
+                
+                String tmp1 = tmpRecord[i].toString();
+                String tmp2 = currentRecord[i].toString();
+                
+                if( tmp1 != null && tmp1.length() > 0 ) {
+                    tmpRecord[i] = tmp1 + "," + tmp2;
+                } else {
+                    tmpRecord[i] = tmp1;
+                }
+                return tmpRecord;
+            }
+            
+            // 設計完了フラグは別処理
+            if( i == NS_FLG_INDEX || i == TEKKYO_FLG_INDEX ) {
+                if( tmpRecord[i] == null ) {
+                    tmpRecord[i] = currentRecord[i];
+                } else {
+                    String tmp1 = (String)tmpRecord[i];
+                    // "*"でない場合以下の処理を行う
+                    if( !tmp1.startsWith("*") ) {
+                        if( currentRecord[i] != null ) {
+                            String tmp2 = (String)currentRecord[i];
+                            // 値が異なる場合は、"*"を設定
+                            if( !tmp1.equals(tmp2) ) {
+                                tmpRecord[i] = StringUtils.repeat("*", DATA_LENGTH[i]);
+                            }
+                        }
+                    }
+                    // 処理を続行する
+                    continue;
+                }
+            }
+            
+            // 基本レコードと取得レコードを比較
+            if( tmpRecord[i] == null && currentRecord[i] == null ) {
+
+                // 両者ともNULLの場合は何もしない
+
+            } else if( tmpRecord[i] == null && currentRecord[i] != null 
+                    ||  tmpRecord[i] != null && currentRecord[i] == null ) {
+            
+                // どちらかがNULLの場合は、"*"の文字列を埋込む
+                tmpRecord[i] = StringUtils.repeat("*", DATA_LENGTH[i]);
+                
+            } else {
+                
+                // 両方ともNULLでない場合
+                // 「*」チェック
+                if( tmpRecord[i] instanceof String ) {
+                    String tmp1 = (String)tmpRecord[i];
+                    if( tmp1.startsWith("*") ) {
+                        // "*"で始まる場合は、何もしない
+                        continue;
+                    }
+                }
+                
+                // String型の場合
+                if( currentRecord[i] instanceof String ) {
+                    
+                    String tmp1 = (String)tmpRecord[i];
+                    String tmp2 = (String)currentRecord[i];
+                    
+                    if ( !tmp1.equals(tmp2) ) {
+
+                        // 値が異なる場合は"*"の文字列を入力
+                        tmpRecord[i] = StringUtils.repeat("*", DATA_LENGTH[i]);
+                    
+                    }
+                    
+                }
+                
+                // BigDecimal型の場合
+                if( currentRecord[i] instanceof BigDecimal ) {
+                    
+                    BigDecimal tmp1 = (BigDecimal)tmpRecord[i];
+                    BigDecimal tmp2 = (BigDecimal)currentRecord[i];
+                    
+                    // 値が異なる場合、"*"の文字列を入力
+                    if( tmp1.compareTo(tmp2) != 0 ) {
+                        
+                        tmpRecord[i] = StringUtils.repeat("*", DATA_LENGTH[i]);
+                        
+                    }
+                }
+                
+                // Date型の場合
+                if( currentRecord[i] instanceof Date ) {
+                    
+                    Date tmp1 = (Date)tmpRecord[i];
+                    Date tmp2 = (Date)currentRecord[i];
+                    
+                    // 値が異なる場合、"*"の文字列を入力
+                    if( tmp1.compareTo(tmp2) != 0 ) {
+                        
+                        tmpRecord[i] = StringUtils.repeat("*", DATA_LENGTH[i]);
+                    
+                    }
+                }
+            }
+        }
+        return tmpRecord;
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] プルダウンリスト設定処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] プルダウンリストの値をセットします。
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void setPulldownlist() throws SystemException {
+        
+        // 共通詳細エンティティ生成
+        final N5Budzog01Entity entityN5Budzog = (N5Budzog01Entity) getEntity(N5Budzog01Entity.class);
+        // ストアドプロシージャ呼出し
+        final List retStrings = entityN5Budzog.selectzougenkamoku();
+        
+        final N5Budbykcls01Entity entityN5Budbykcls = (N5Budbykcls01Entity) getEntity(N5Budbykcls01Entity.class);
+        final List retStrings2 = entityN5Budbykcls.selectyokyusyubetu();
+        
+        final N5Budjgukbn01Entity entityN5Budjgukbn = (N5Budjgukbn01Entity) getEntity(N5Budjgukbn01Entity.class);
+        final List retStrings3 = entityN5Budjgukbn.selectservicecode();
+        
+        final N5Budmngkbn01Entity entityN5Budmngkbn = (N5Budmngkbn01Entity) getEntity(N5Budmngkbn01Entity.class);
+        final List retStrings4 = entityN5Budmngkbn.selectkanrikubun();
+        
+        final N5Budkpohoh01Entity entityN5Budkpohoh = (N5Budkpohoh01Entity) getEntity(N5Budkpohoh01Entity.class);
+        final List retStrings5 = entityN5Budkpohoh.selectkonpou();
+        final List retStrings55 = entityN5Budkpohoh.selectkonpou2();
+        
+        
+        // 下り電文にメッセージIDをセット
+        addResponseData(SETPULLDOWN[1], retStrings);      // 施工組織名
+        addResponseData(SETPULLDOWN[2], retStrings2);      // 要求種別コード
+        addResponseData(SETPULLDOWN[4], retStrings3);      // 事業区分
+        addResponseData(SETPULLDOWN[5], retStrings4);      // 管理区分
+        addResponseData(SETPULLDOWN[6], retStrings5);      // 梱包方法
+        addResponseData(SETPULLDOWN[7], retStrings55);      // 梱包方法コード
+            
+    }
+    
+    
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 内訳登録
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 各テーブルに対してレコードを追加します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException
+     */
+    public void utiwakeToroku() throws SystemException, BusinessException  {
+        
+        // クライアントから上り電文取得
+        final List tubanList = getRequestListData(TOROKU_KOMOKU[0]);            // レコード通番 
+        
+        final String henko_kubun = getRequestData(TOROKU_KOMOKU[2]);        // 変更区分
+        final String syori_flag = getRequestData(TOROKU_KOMOKU[3]);         // 処理区分フラグ
+        final String yobidasi_flag = getRequestData(TOROKU_KOMOKU[4]);      // 呼出元フラグ
+        
+        final String seko_cd = getRequestData(TOROKU_KOMOKU[5]);             // 施工組織コード
+        final String sogokoji_ban = getRequestData(TOROKU_KOMOKU[6]);        // 総合工事番号
+        final String koji_keikakuno = getRequestData(TOROKU_KOMOKU[7]);     // 工事計画番号
+        final String koteisisan_sscd = getRequestData(TOROKU_KOMOKU[80]);      //  固定資産組織コード
+        
+        String utiwake_recordno = null;     // レコード通番
+
+        //レコード通番格納変数
+        Object[] recordTuban = null;
+        
+        String utiwakeRecord = null;
+        
+        // レコード通番－更新カウンタマッピングリスト
+        List updCntMapList = new ArrayList();
+        
+        //エンティティ生成
+        final N5Buibutkrykmg01Entity entityN5Buibutkrykmg = (N5Buibutkrykmg01Entity) getEntity(N5Buibutkrykmg01Entity.class);
+        final N5Buibutkryser01Entity entityN5Buibutkryser = (N5Buibutkryser01Entity) getEntity(N5Buibutkryser01Entity.class);
+
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        // 内訳データ変更情報エンティティ生成
+        final N5Buiuhj01Entity entityN5Buiuhj = (N5Buiuhj01Entity) getEntity(N5Buiuhj01Entity.class);
+        
+        // DTOクラスの生成
+        N5BuibututkForIkkatusyusei01DTO utkDto = new N5BuibututkForIkkatusyusei01DTO();       // 内訳情報DTO
+        
+        // DTOに上り電文を設定
+        //DTO 初期化
+        utkDto.clear();
+
+        //DTO 設定
+        denbunToDto(utkDto);
+
+        //追加処理
+        if (SYORI_KUBUN_TUIKA.equals(syori_flag)) {
+            
+            // 所内内訳書レコード通番最大値取得
+            int MaxUtwRec = entityN5Buiutw.getMaxRec(seko_cd, sogokoji_ban, koji_keikakuno);
+            
+            // DTOに設定
+            utkDto.setUtwrec(Integer.toString((++MaxUtwRec)));
+            utkDto.setSrtrec(Integer.toString((MaxUtwRec)));
+            
+            // 所内内訳書データ
+            int recCnt =entityN5Buiutw.gamentuika(utkDto);
+                       
+            if( log.isDebugEnabled() ) {
+                log.debug("所内内訳書データ追加件数：" + recCnt);
+            }
+           
+            // 内訳データ変更情報データ
+            recCnt =entityN5Buiuhj.gamentuika(utkDto);
+                       
+            if( log.isDebugEnabled() ) {
+                log.debug("内訳データ変更情報データ追加件数：" + recCnt);
+            }
+
+            //物品管理用工事管理
+            try {
+                recCnt = entityN5Buibutkrykmg.gamentuika(seko_cd,sogokoji_ban,koji_keikakuno,koteisisan_sscd);
+                if( log.isDebugEnabled() ) {
+                    log.debug("物品管理用工事管理追加件数：" + recCnt);
+                }
+            } catch( UniqueKeyException e ) {
+                if( log.isDebugEnabled() ) {
+                    log.debug("物品管理用工事管理登録済");
+                }
+            }
+            
+            //物品管理用設計完了
+            //NS/撤去データ一覧の場合のみ追加
+            if (YOBIDASI_NS_TEKKYO.equals(yobidasi_flag)) {
+                try {
+                    recCnt = entityN5Buibutkryser.gamentuika(seko_cd,sogokoji_ban,koji_keikakuno,henko_kubun);
+                    if( log.isDebugEnabled() ) {
+                        log.debug("物品管理用設計完了追加件数：" + recCnt);
+                    }
+                } catch( UniqueKeyException e ) {
+                    if( log.isDebugEnabled() ) {
+                        log.debug("物品管理用設計完了登録済");
+                    }
+                }
+            }
+        }
+        //更新
+        else if(SYORI_KUBUN_KOSIN.equals(syori_flag)) { 
+            
+            List tubanArray = (List)tubanList.get(0);   
+            recordTuban = tubanArray.toArray();
+            utiwake_recordno = recordTuban[0].toString();
+            
+            // 物品内訳DTOにキー項目設定
+            utkDto.setUtwrec(utiwake_recordno);         // 内訳レコード通番
+            
+            // 所内内訳書、内訳データ変更情報 排他参照
+            if( entityN5Buiutw.findByKeyBuppinRecordForUpdate(seko_cd, sogokoji_ban, koji_keikakuno, utiwake_recordno) == 0 ||
+                    entityN5Buiuhj.findByKeyBuppinRecordForUpdate(seko_cd, sogokoji_ban, koji_keikakuno, utiwake_recordno) == 0  ) {
+                // 排他失敗
+                Message message = new Message("NNCW0005");
+                throw new BusinessException(message, "SyonaiUtiwakesyoSakusei#utiwakeToroku()");
+            }
+
+            //所内内訳書データ
+            int recordCnt = entityN5Buiutw.gamenkosin(utkDto);
+            
+            if( log.isDebugEnabled() ) {
+                log.debug("所内内訳書データ更新件数：" + recordCnt);
+            }
+            
+            // レコード格納用配列
+            Object[] retStrings = null;
+            // 変更済フラグ検索
+            retStrings = entityN5Buiuhj.findhnzflg(seko_cd,sogokoji_ban,koji_keikakuno, utiwake_recordno);
+            
+            String flg = "1";
+            // 検索結果を設定
+            if (retStrings[0].toString().equals(flg)) {
+                utkDto.setUnthnzflg(retStrings[0].toString()); // ユニット変更済フラグ
+            }
+            if (retStrings[1].toString().equals(flg)) {
+                utkDto.setHaibanhnzflg(retStrings[1].toString()); // 配置番号変更済フラグ
+            }
+            if (retStrings[2].toString().equals(flg)) {
+                utkDto.setKmihnzflg(retStrings[2].toString()); // 架名変更済フラグ
+            }
+            if (retStrings[3].toString().equals(flg)) {
+                utkDto.setStmhnzflg(retStrings[3].toString()); // 装置名変更済フラグ
+            }
+            if (retStrings[4].toString().equals(flg)) {
+                utkDto.setKbnhnzflg(retStrings[4].toString()); // 架番号変更済フラグ
+            }
+            if (retStrings[5].toString().equals(flg)) {
+                utkDto.setSbnhnzflg(retStrings[5].toString()); // 装置番号変更済フラグ
+            }
+            if (retStrings[6].toString().equals(flg)) {
+                utkDto.setSrohnzflg(retStrings[6].toString()); // 数量変更済フラグ
+            }
+            if (retStrings[7].toString().equals(flg)) {
+                utkDto.setMakhnzflg(retStrings[7].toString()); // メーカ変更済フラグ
+            }
+            if (retStrings[8].toString().equals(flg)) {
+                utkDto.setZsbhnzflg(retStrings[8].toString()); // 在再別変更済フラグ
+            }
+            if (retStrings[9].toString().equals(flg)) {
+                utkDto.setTakhnzflg(retStrings[9].toString()); // 単価変更済フラグ
+            }
+            if (retStrings[10].toString().equals(flg)) {
+                utkDto.setSbmhnzflg(retStrings[10].toString()); // 細分名変更フラグ
+            }
+            if (retStrings[11].toString().equals(flg)) {
+                utkDto.setKob_cdhnzflg(retStrings[11].toString()); // 個別コード変更フラグ
+            }
+            if (retStrings[12].toString().equals(flg)) {
+                utkDto.setKndhnzflg(retStrings[12].toString()); // 建設年度変更フラグ
+            }
+
+            //内訳データ変更情報データ
+            recordCnt = entityN5Buiuhj.gamenkosin(utkDto);
+            
+            if( log.isDebugEnabled() ) {
+                log.debug("内訳データ変更情報データ更新件数：" + recordCnt);
+            }
+            
+        } 
+        // 一括修正
+        else {
+            
+            try {
+                // 各Entity初期処理 SQLを生成
+                entityN5Buiutw.initIkkatusyusei(utkDto);
+                entityN5Buiuhj.initIkkatusyusei(utkDto);
+
+                // 更新対象レコード通番格納要List
+                List utwrecList = new ArrayList();
+                   
+                for( Iterator itr = tubanList.iterator(); itr.hasNext(); ) {
+
+                    List tubanData = (List)itr.next();
+                    recordTuban = tubanData.toArray();
+                    Object utwrec = recordTuban[0];
+                    utiwakeRecord = recordTuban[0].toString();
+                    
+                    // 既に更新済みかをチェック
+                    if( !utwrecList.contains(utwrec) ) {
+                        
+                        // 所内内訳書、内訳データ変更情報 排他参照
+                        if( entityN5Buiutw.findByKeyBuppinRecordForUpdate(seko_cd, sogokoji_ban, koji_keikakuno, utiwakeRecord) == 0 ||
+                                entityN5Buiuhj.findByKeyBuppinRecordForUpdate(seko_cd, sogokoji_ban, koji_keikakuno, utiwakeRecord) == 0  ) {
+                            // 排他失敗
+                            if( log.isDebugEnabled() ) {
+                                log.debug("施工組織コード:" + seko_cd + "総合工事番号:" + sogokoji_ban 
+                                        + "工事計画番号:" + koji_keikakuno + "レコード通番:" + utiwakeRecord);
+                            }
+                            Message message = new Message("NNCW0005");
+                            throw new BusinessException(message, "IkkatuSyusei#utiwakeToroku()");
+                        }
+
+                        //所内内訳書データ更新
+                        entityN5Buiutw.updateIkkatusyusei(seko_cd, sogokoji_ban, koji_keikakuno, utiwakeRecord);
+                        
+                        // レコード格納用配列
+                        Object[] retStrings = null;
+                        // 変更済フラグ検索
+                        retStrings = entityN5Buiuhj.findhnzflg(seko_cd,sogokoji_ban,koji_keikakuno, utiwakeRecord);
+                        
+                        String flg = "1";
+                        // 検索結果を設定
+                        if (retStrings[0].toString().equals(flg)) {
+                            utkDto.setUnthnzflg(retStrings[0].toString()); // ユニット変更済フラグ
+                        }
+                        if (retStrings[1].toString().equals(flg)) {
+                            utkDto.setHaibanhnzflg(retStrings[1].toString()); // 配置番号変更済フラグ
+                        }
+                        if (retStrings[2].toString().equals(flg)) {
+                            utkDto.setKmihnzflg(retStrings[2].toString()); // 架名変更済フラグ
+                        }
+                        if (retStrings[3].toString().equals(flg)) {
+                            utkDto.setStmhnzflg(retStrings[3].toString()); // 装置名変更済フラグ
+                        }
+                        if (retStrings[4].toString().equals(flg)) {
+                            utkDto.setKbnhnzflg(retStrings[4].toString()); // 架番号変更済フラグ
+                        }
+                        if (retStrings[5].toString().equals(flg)) {
+                            utkDto.setSbnhnzflg(retStrings[5].toString()); // 装置番号変更済フラグ
+                        }
+                        if (retStrings[6].toString().equals(flg)) {
+                            utkDto.setSrohnzflg(retStrings[6].toString()); // 数量変更済フラグ
+                        }
+                        if (retStrings[7].toString().equals(flg)) {
+                            utkDto.setMakhnzflg(retStrings[7].toString()); // メーカ変更済フラグ
+                        }
+                        if (retStrings[8].toString().equals(flg)) {
+                            utkDto.setZsbhnzflg(retStrings[8].toString()); // 在再別変更済フラグ
+                        }
+                        if (retStrings[9].toString().equals(flg)) {
+                            utkDto.setTakhnzflg(retStrings[9].toString()); // 単価変更済フラグ
+                        }
+                        if (retStrings[10].toString().equals(flg)) {
+                            utkDto.setSbmhnzflg(retStrings[10].toString()); // 細分名変更フラグ
+                        }
+                        if (retStrings[11].toString().equals(flg)) {
+                            utkDto.setKob_cdhnzflg(retStrings[11].toString()); // 個別コード変更フラグ
+                        }
+                        if (retStrings[12].toString().equals(flg)) {
+                            utkDto.setKndhnzflg(retStrings[12].toString()); // 建設年度変更フラグ
+                        }
+                        
+                        // 各Entity初期処理 SQLを生成
+                        entityN5Buiuhj.initIkkatusyusei(utkDto);
+                        
+                        //内訳データ変更情報データ
+                        entityN5Buiuhj.updateIkkatusyusei(seko_cd, sogokoji_ban, koji_keikakuno, utiwakeRecord);
+                        
+                        // 更新済み内訳レコード通番をリストに格納
+                        utwrecList.add(utwrec);
+                    }
+                    
+                }
+            } catch ( ResourceBusyException e ) {
+                // 業務エラーを設定
+                Message message = new Message("NNCW0005");
+                throw new BusinessException(message, "IkkatuSyusei#utiwakeToroku()", e);
+            }
+        }
+        
+        // 下り電文にメッセージIDをセット
+        String str = "NNCN0001";
+        addResponseData(TOROKU_KOMOKU[69], str);
+        
+        // 下り電文に内訳レコード通番、分割レコード通番、更新カウンタをセット
+        addResponseData(TOROKU_KOMOKU[82],updCntMapList);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 電文設定
+     * </p>
+     * <p>
+     * [詳 細] 上り電文をDTOに設定します。
+     * </p>
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @param utkDto
+     */
+
+    private void denbunToDto(final N5BuibututkForIkkatusyusei01DTO utkDto) {
+        
+        final String flg = getRequestData(TOROKU_KOMOKU[4]);
+        
+        //---------------------内訳情報---------------------/
+        utkDto.setSkscd(getRequestData(TOROKU_KOMOKU[5]));      // 施工組織コード
+        utkDto.setSkjban(getRequestData(TOROKU_KOMOKU[6]));     // 総合工事番号
+        utkDto.setKkn(getRequestData(TOROKU_KOMOKU[7]));        // 工事計画番号
+        utkDto.setSrtrec(getRequestData(TOROKU_KOMOKU[8]));     // ソート用レコード通番
+        if( YOBIDASI_NS_TEKKYO.equals(flg) ) {
+            utkDto.setHnk(getRequestData(TOROKU_KOMOKU[2]));    // 変更区分
+        }
+        utkDto.setBil_cd(getRequestData(TOROKU_KOMOKU[23]));    // ビルコード
+        utkDto.setBil_nm(getRequestData(TOROKU_KOMOKU[24]));    // ビル名
+        utkDto.setZog(getRequestData(TOROKU_KOMOKU[10]));       // 増減科目
+        utkDto.setMngskh_cd_new(getRequestData(TOROKU_KOMOKU[11])); // 管理責任者
+        utkDto.setSv_cd(getRequestData(TOROKU_KOMOKU[12]));     // サービスコード
+        utkDto.setItm(getRequestData(TOROKU_KOMOKU[25]));       // 共通アイテム
+        utkDto.setFla(getRequestData(TOROKU_KOMOKU[26]));       // フロア
+        utkDto.setGun(getRequestData(TOROKU_KOMOKU[27]));       // 群
+        utkDto.setTbn(getRequestData(TOROKU_KOMOKU[28]));       // 通番
+        utkDto.setKmistmflg(getRequestData(TOROKU_KOMOKU[29])); // 架名装置名フラグ
+        utkDto.setKmistm(getRequestData(TOROKU_KOMOKU[30]));    // 架名装置名
+        utkDto.setKmistm_nm(getRequestData(TOROKU_KOMOKU[31])); // 架名装置名（名称)
+        utkDto.setKstban(getRequestData(TOROKU_KOMOKU[32]));    // 架装置番号
+        utkDto.setMngkbn(getRequestData(TOROKU_KOMOKU[33]));    // 管理区分
+        utkDto.setSbi(getRequestData(TOROKU_KOMOKU[34]));       // 設備
+        utkDto.setSyu(getRequestData(TOROKU_KOMOKU[35]));       // 種目
+        utkDto.setSmk(getRequestData(TOROKU_KOMOKU[36]));       // 細目
+        utkDto.setSbn(getRequestData(TOROKU_KOMOKU[37]));       // 細分
+        utkDto.setSirban(getRequestData(TOROKU_KOMOKU[38]));    // 整理コード
+        utkDto.setHtiutw_nm(getRequestData(TOROKU_KOMOKU[39])); // 本体内訳名
+        utkDto.setHkk_cd(getRequestData(TOROKU_KOMOKU[40]));    // 保管課コード
+        utkDto.setKob_cd(getRequestData(TOROKU_KOMOKU[41]));    // 個別コード
+        utkDto.setKnd_se(getRequestData(TOROKU_KOMOKU[16]));       // 建設年度
+        utkDto.setSym(getRequestData(TOROKU_KOMOKU[42]));       // 開始年月
+        utkDto.setYoucls(getRequestData(TOROKU_KOMOKU[13]));    // 要求種別
+        utkDto.setSts(getRequestData(TOROKU_KOMOKU[75]));       // ステータス
+        utkDto.setButu_cd(getRequestData(TOROKU_KOMOKU[14]));   // 物品コード
+        utkDto.setButu_kana_nm(getRequestData(TOROKU_KOMOKU[15]));  // 物品カナ品名
+        utkDto.setHtiutwkhf(getRequestData(TOROKU_KOMOKU[17])); // 本体構成品フラグ
+        utkDto.setAb_len(getRequestData(TOROKU_KOMOKU[18]));    // ab長
+        utkDto.setSro(getRequestData(TOROKU_KOMOKU[76]));       // 数量
+        utkDto.setSiyousyo_no(getRequestData(TOROKU_KOMOKU[19]));   // 仕様書番号
+        utkDto.setMak_cd(getRequestData(TOROKU_KOMOKU[44]));    // メーカコード
+        utkDto.setNkm(getRequestData(TOROKU_KOMOKU[45]));       // メーカ名
+        utkDto.setSzu_ym(getRequestData(TOROKU_KOMOKU[21]));    // 製造年月
+        utkDto.setSzuban(getRequestData(TOROKU_KOMOKU[22]));    // 製造番号
+        utkDto.setZsbflg(getRequestData(TOROKU_KOMOKU[73]));    // 在再別フラグ
+        utkDto.setTak(getRequestData(TOROKU_KOMOKU[46]));       // 単価
+        utkDto.setGok(getRequestData(TOROKU_KOMOKU[47]));       // 合価
+        utkDto.setKjiutw(getRequestData(TOROKU_KOMOKU[20]));    // 記事内訳
+        utkDto.setUtwbktflg(getRequestData(TOROKU_KOMOKU[74])); // 内訳分割フラグ
+        //
+        utkDto.setKmi(getRequestData(TOROKU_KOMOKU[83])); // 架名
+        utkDto.setKab(getRequestData(TOROKU_KOMOKU[84])); // 架番号
+        utkDto.setStm(getRequestData(TOROKU_KOMOKU[85])); // 装置名
+        utkDto.setSuiban(getRequestData(TOROKU_KOMOKU[86])); // 装置番号
+        utkDto.setGyoteFlg(getRequestData(TOROKU_KOMOKU[71]));  // 業提フラグ
+        utkDto.setChoban(getRequestData(TOROKU_KOMOKU[9]));  // 調書番号
+        utkDto.setChoedaban(getRequestData(TOROKU_KOMOKU[87]));  // 調書枝番号
+        utkDto.setButrec(getRequestData(TOROKU_KOMOKU[88]));     // 物品レコード通番
+        
+        utkDto.setUnthnzflg(getRequestData(TOROKU_KOMOKU[89]));     // ユニット変更済フラグ
+        utkDto.setHaibanhnzflg(getRequestData(TOROKU_KOMOKU[90]));     // 配置番号変更済フラグ
+        utkDto.setKmihnzflg(getRequestData(TOROKU_KOMOKU[91]));     // 架名変更済フラグ
+        utkDto.setStmhnzflg(getRequestData(TOROKU_KOMOKU[92]));     // 装置名変更済フラグ
+        utkDto.setKbnhnzflg(getRequestData(TOROKU_KOMOKU[93]));     // 架番号変更済フラグ
+        utkDto.setSbnhnzflg(getRequestData(TOROKU_KOMOKU[94]));     // 装置番号変更済フラグ
+        utkDto.setSrohnzflg(getRequestData(TOROKU_KOMOKU[95]));     // 数量変更済フラグ
+        utkDto.setMakhnzflg(getRequestData(TOROKU_KOMOKU[96]));     // メーカ変更済フラグ
+        utkDto.setZsbhnzflg(getRequestData(TOROKU_KOMOKU[97]));     // 在再別変更済フラグ
+        utkDto.setTakhnzflg(getRequestData(TOROKU_KOMOKU[98]));     // 単価変更済フラグ
+        utkDto.setSbmhnzflg(getRequestData(TOROKU_KOMOKU[99]));     // 細分名変更フラグ
+        utkDto.setKob_cdhnzflg(getRequestData(TOROKU_KOMOKU[100])); // 個別コード変更フラグ
+        utkDto.setKndhnzflg(getRequestData(TOROKU_KOMOKU[101]));    // 建設年度変更フラグ
+        
+    }
+    
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 交換機ID検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 交換機IDを検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void unitKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(NOD_KENSAKU[0]);        // 施工組織コード
+        final String billCode = getRequestData(NOD_KENSAKU[1]);        // ビルコード
+        final String untCode = getRequestData(NOD_KENSAKU[2]);         // ユニットコード
+        
+        // ビルコード定数エンティティ生成
+        final N5Skduntcd01Entity entityN5Skduntcd = (N5Skduntcd01Entity) getEntity(N5Skduntcd01Entity.class);
+        
+        // ユニット検索
+        final String retStirngs = entityN5Skduntcd.nokidkensaku(sekoCode, billCode, untCode);
+
+        addResponseData(NOD_KENSAKU[3], retStirngs);
+    } 
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 設備情報検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 設備情報を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void setubijohoKensaku() throws SystemException {
+        
+        // 設備情報検索エンティティ生成
+        final N5Budsnikos01Entity entityN5Budsnikos = (N5Budsnikos01Entity) getEntity(N5Budsnikos01Entity.class);
+        
+        // 設備情報検索処理呼出し
+        final List retsetubijoho = entityN5Budsnikos.setubijohokensaku();
+        
+        // 下り電文に設備情報リストを設定
+        addResponseData(SETUBIJOHO_KENSAKU[5], retsetubijoho);
+        
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 架名装置名検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 架名／装置名検索
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void kasotinmKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String kasoti_flg = getRequestData(KASOTI_KENSAKU[0]); // 架名装置名フラグ
+        final String stmcls = getRequestData(KASOTI_KENSAKU[1]);        // 装置名種別
+               
+        // 架名／装置名検索エンティティ生成
+        final N5Budsnikos01Entity entityN5Budsnikos = (N5Budsnikos01Entity) getEntity(N5Budsnikos01Entity.class);
+        
+        // 本体内訳名検索処理呼出し
+        final List retkasotinm = entityN5Budsnikos.kasotinmkensaku(kasoti_flg,stmcls);
+        
+        // 下り電文に架名/装置名を設定
+        addResponseData(KASOTI_KENSAKU[2], retkasotinm);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 装置名種別検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 装置名種別を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void sotisyuKensaku() throws SystemException {
+        
+        // 設備情報検索エンティティ生成
+        final N5Budstmcls01Entity entityN5Budstmcls = (N5Budstmcls01Entity) getEntity(N5Budstmcls01Entity.class);
+        
+        // 本体内訳名検索処理呼出し
+        final List retsotinm = entityN5Budstmcls.sotisyukensaku();
+        
+        // 下り電文に略称ビル名リストを設定
+        addResponseData(KASOTI_KENSAKU[3], retsotinm);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 優遇税制検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 優遇税制情報を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void yuguzeiseiKensaku_1() throws SystemException {
+        
+        final String setubi = getRequestData(SETUBIJOHO_KENSAKU[0]);    // 設備
+        final String syumoku = getRequestData(SETUBIJOHO_KENSAKU[1]);   // 種目
+        final String saimoku = getRequestData(SETUBIJOHO_KENSAKU[2]);   // 細目
+        final String saibun = getRequestData(SETUBIJOHO_KENSAKU[3]);    // 細分
+        final String seiriCode = getRequestData(SETUBIJOHO_KENSAKU[4]); // 整理コード
+        
+        // 設備情報検索エンティティ生成
+        final N5Buiyzsmt01Entity entityN5Buiyzsmt = (N5Buiyzsmt01Entity) getEntity(N5Buiyzsmt01Entity.class);
+        
+        // 本体内訳名検索処理呼出し
+        final List retsotinm = entityN5Buiyzsmt.yuguzeiseikensaku(setubi, syumoku, saimoku, saibun, seiriCode);
+        
+        // 下り電文に設定
+        addResponseData(SETUBIJOHO_KENSAKU[5], retsotinm);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] メーカ名検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] メーカ名を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void maknmKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String mak_cd = getRequestData(MAK_KENSAKU[0]); // メーカコード
+        
+        // メーカ名検索エンティティ生成
+        final N5Budbutmak01Entity entityN5Budbutmak = (N5Budbutmak01Entity) getEntity(N5Budbutmak01Entity.class);
+        
+        // メーカ名検索処理呼出し
+        final String retStirngs = entityN5Budbutmak.maknmkensaku(mak_cd);
+        
+        // 下り電文に略称ビル名リストを設定
+        addResponseData(MAK_KENSAKU[1], retStirngs);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 物品名検索
+     * </p>
+     * <p>
+     * [詳 細] 物品名取得処理
+     * </p>
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void butunmKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String butu_cd = getRequestData(BUTU_KENSAKU[0]); // 物品コード
+        final String zog = getRequestData(BUTU_KENSAKU[1]);     // 増減科目
+        
+        // 物品名検索エンティティ生成
+        final N5Budbut01Entity entityN5Budbut = (N5Budbut01Entity) getEntity(N5Budbut01Entity.class);
+        
+        // 物品名検索処理呼出し
+        final Object[] retStirngs = entityN5Budbut.butunmkensaku(zog,butu_cd);
+        
+        // 下り電文に略称ビル名リストを設定
+        addResponseData(BUTU_KENSAKU [2], retStirngs[0]);
+        addResponseData(BUTU_KENSAKU [3], retStirngs[1]);
+        addResponseData(BUTU_KENSAKU [4], retStirngs[2]);
+        addResponseData(BUTU_KENSAKU [5], retStirngs[3]);
+        addResponseData(BUTU_KENSAKU [6], retStirngs[4]);
+        addResponseData(BUTU_KENSAKU [7], retStirngs[5]);
+        addResponseData(BUTU_KENSAKU [8], retStirngs[6]);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 送付先名取得
+     * </p>
+     * <p>
+     * [詳 細] 送付先名取得処理
+     * </p>
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void sohunmKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String butu_cd = getRequestData(SOHU_KENSAKU[0]); // 固定資産組織コード
+        
+        // 送付名検索エンティティ生成
+        final N5Budtskblc01Entity entityN5Budtskblc = (N5Budtskblc01Entity) getEntity(N5Budtskblc01Entity.class);
+        
+        // 送付名検索処理呼出し
+        final List retStirngs = entityN5Budtskblc.sohunmkensaku(butu_cd);
+        
+        // 下り電文に略称送付先リストを設定
+        addResponseData(SOHU_KENSAKU[1], retStirngs);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] フロア群通番取得
+     * </p>
+     * <p>
+     * [詳 細] フロア、群、通番検索
+     * </p>
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void flaguntubanKensaku() throws SystemException {
+        
+        // クライアントから上り電文取得
+        final String seko_cd = getRequestData(FLAGUNTUBAN_KENSAKU[0]);    // 施工組織コード
+        final String sogokoji_ban = getRequestData(FLAGUNTUBAN_KENSAKU[1]);   // 総合工事番号
+        final String koji_keikakuno = getRequestData(FLAGUNTUBAN_KENSAKU[2]);   // 工事計画番号        
+
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        
+        // フロア、群、通番検索処理呼出し
+        final List retStirngs = entityN5Buiutw.flaguntubankensaku(seko_cd,sogokoji_ban,koji_keikakuno);
+
+        // 下り電文に略称フロア、群、通番リストを設定
+        addResponseData(FLAGUNTUBAN_KENSAKU[3], retStirngs);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 優遇税制検索2
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 優遇税制情報を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考] 
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void yuguzeiseiKensaku_2() throws SystemException {
+
+        final String sbi = getRequestData(SETUBIJOHO_KENSAKU[0]);       // 設備
+        final String syu = getRequestData(SETUBIJOHO_KENSAKU[1]);       // 種目
+        final String smk = getRequestData(SETUBIJOHO_KENSAKU[2]);       // 細目
+        final String sbn = getRequestData(SETUBIJOHO_KENSAKU[3]);       // 細分
+        final String sricode = getRequestData(SETUBIJOHO_KENSAKU[4]);   // 整理コード
+        final String sksCd = getRequestData(SETUBIJOHO_KENSAKU[9]);    // 施工組織コード
+        final String sogoNum = getRequestData(SETUBIJOHO_KENSAKU[10]);    // 総合工事番号
+        final String kojiNum = getRequestData(SETUBIJOHO_KENSAKU[11]);   // 工事計画番号
+        
+        
+        // 優遇税制マスタエンティティ生成
+        final N5Buiyzsmt01Entity entityN5Buiyzsmt = (N5Buiyzsmt01Entity) getEntity(N5Buiyzsmt01Entity.class);
+        
+        // 優遇税制データ検索処理呼出し
+        final List retList = entityN5Buiyzsmt.yuguzeiseikensaku2(sksCd, sogoNum, kojiNum, sbi, syu, smk, sbn, sricode);
+        
+        // 下り電文に略称優遇税制リストを設定
+        if( retList.size() <= 0 ) {
+            // レコードが0件の場合
+            addResponseData(SETUBIJOHO_KENSAKU[12], "");
+            addResponseData(SETUBIJOHO_KENSAKU[13], "");
+            addResponseData(SETUBIJOHO_KENSAKU[14], "");
+            addResponseData(SETUBIJOHO_KENSAKU[15], "");
+            addResponseData(SETUBIJOHO_KENSAKU[16], "");
+            addResponseData(SETUBIJOHO_KENSAKU[17], "");
+            addResponseData(GAMEN_SETTEI[65], "");
+        } else {
+            // レコードが1件以上の場合
+            Object[] recArray = (Object[])retList.get(0);
+            addResponseData(SETUBIJOHO_KENSAKU[12], recArray[0]);
+            addResponseData(SETUBIJOHO_KENSAKU[13], recArray[1]);
+            addResponseData(SETUBIJOHO_KENSAKU[14], recArray[2]);
+            addResponseData(SETUBIJOHO_KENSAKU[15], recArray[3]);
+            addResponseData(SETUBIJOHO_KENSAKU[16], recArray[4]);
+            addResponseData(SETUBIJOHO_KENSAKU[17], recArray[5]);
+            addResponseData(GAMEN_SETTEI[65], "あり");
+        }
+        
+        // 本体内訳名参照処理
+        this.hontaiUtiwakemeiKensaku();
+    }
+    
+    //******追加・修正・一括修正ここまで******//
+
+    
+    //******端局区間ここから******//
+    
+    /**
+     * <p>
+     * [概 要] 端局区間検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 端局区間情報を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void tankyokuKukan() throws SystemException {
+        
+        // クライアントからの上り電文を取得
+        final String sekoCode = getRequestData(TANKYOKUKUKAN[0]);
+        final String bilCode = getRequestData(TANKYOKUKUKAN[1]);
+        final String jikyokuFlag = getRequestData(TANKYOKUKUKAN[2]);
+        
+        // 端局区間エンティティの生成
+        final N5Budtnkkun01Entity entityN5Budtnkkun01 = (N5Budtnkkun01Entity) getEntity(N5Budtnkkun01Entity.class);
+        // 端局区間参照の呼び出し
+        final List list = entityN5Budtnkkun01.findAllTankyokuKensaku(sekoCode, bilCode, jikyokuFlag);
+
+        // 結果を下り電文に設定
+        addResponseData(TANKYOKUKUKAN[3], list);
+    }
+    //*****端局区間ここまで******//
+    
+    //******内訳分割ここから******//    
+    /**
+     * <p>
+     * [概 要] 内訳分割データ検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳レコード通番に紐付く分割レコードを検索します。
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void utiwakeBunkatuKensaku() throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeBunkatuKensaku() - start");
+        }
+        
+        int denbunIndex = 0;  // 電文カウンタインデックス
+        
+        // クライアントから上り電文取得
+        final String utiwakeRec = getRequestData(BUNKATU_KENSAKU[denbunIndex++]);   // レコード通番
+        final String uktBktRec  = getRequestData(BUNKATU_KENSAKU[denbunIndex++]);   // 分割通番
+        final String sekoCode   = getRequestData(BUNKATU_KENSAKU[denbunIndex++]);   // 施工組織コード
+        final String sogoBango  = getRequestData(BUNKATU_KENSAKU[denbunIndex++]);   // 総合工事番号
+        final String kojiBango  = getRequestData(BUNKATU_KENSAKU[denbunIndex++]);   // 工事計画番号
+
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+
+        // 検索処理実行
+        List retList = entityN5Buiutw.findByKeyBunkatuRecord(sekoCode, sogoBango, kojiBango, uktBktRec, utiwakeRec);
+
+        // レコードの整形・下り電文設定
+        int recordIndex = 0;                    // レコードのIndex
+        double totalSuryo = 0;                  // 合計数量
+        long totalGoka  = 0;                    // 合計合価
+        List tmpList = new ArrayList(50);       // 一行データ格納用
+        List bunkatuList = new ArrayList();     // 一覧リスト格納用
+        Iterator itr = retList.iterator();
+        for( int i = 0; itr.hasNext(); i++) {
+            Object[] record = (Object[])itr.next();
+            if( i == 0 ) {
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 調書番号
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 増減科目
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 管理責任者
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // サービスコード
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 保管課コード
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 個別コード
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 建設年度
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 本体内訳－構成品フラグ
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 物品コード
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 物品カナ品名
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // ａｂ長
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 数量
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // メーカコード
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // メーカ名
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 製造年月
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 製造番号
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 単価
+                addResponseData(BUNKATU_KENSAKU[denbunIndex++], record[recordIndex++]); // 合価
+
+            }
+            // 電文カウンタを一覧項目のインデックス値で初期化
+            recordIndex = 18;
+            String[] HyoujiKoumoku = new String[3];
+            HyoujiKoumoku[0] = "▼";
+            HyoujiKoumoku[1] = "ビル検索";
+            HyoujiKoumoku[2] = "参照";
+            
+            tmpList.clear();
+            tmpList.add(record[recordIndex++]); // 分割レコード通番
+            tmpList.add(record[recordIndex++]); // ビルコード
+            tmpList.add(HyoujiKoumoku[0]); // '▼'
+            tmpList.add(HyoujiKoumoku[1]); // 'ビル検索'
+            tmpList.add(record[recordIndex++]); // 共通アイテム
+            tmpList.add(HyoujiKoumoku[2]); // '参照'
+            tmpList.add(record[recordIndex++]); // フロア
+            tmpList.add(record[recordIndex++]); // 群
+            tmpList.add(record[recordIndex++]); // 通番
+            tmpList.add(record[recordIndex++]); // 詳細架名_装置名
+            tmpList.add(record[recordIndex++]); // 番号
+            tmpList.add(record[recordIndex++]); // 開始年月
+            tmpList.add(record[recordIndex++]); // ビル名
+            tmpList.add(record[recordIndex++]); // 本体内訳名
+            tmpList.add(record[recordIndex++]); // 管理区分
+            tmpList.add(record[recordIndex++]); // 設備
+            tmpList.add(record[recordIndex++]); // 種目
+            tmpList.add(record[recordIndex++]); // 細目
+            tmpList.add(record[recordIndex++]); // 細分
+            tmpList.add(record[recordIndex++]); // 整理コード
+            tmpList.add(record[recordIndex]); // 数量
+            // 合計数量の計算
+            totalSuryo = totalSuryo
+                       + ((BigDecimal)record[recordIndex++]).doubleValue();   // 合計数量
+            tmpList.add(record[recordIndex]); // 合価
+            // 合計合価の計算
+            totalGoka = totalGoka
+                      + ((BigDecimal)record[recordIndex++]).longValue();      // 合計合価
+
+            //
+            tmpList.add(record[recordIndex++]); // 統一伝票番号
+            tmpList.add(record[recordIndex++]); // 受取年月日
+            tmpList.add(record[recordIndex++]); // 受取確認者
+            //        
+            tmpList.add(record[recordIndex++]); // 架名_装置名フラグ
+            tmpList.add(record[recordIndex++]); // 架名_装置名
+            tmpList.add(record[recordIndex++]); // 保管課コード          
+            tmpList.add(record[recordIndex++]); // 個別コード
+            tmpList.add(record[recordIndex++]); // 建設年度
+            tmpList.add(record[recordIndex++]); // メーカコード
+            tmpList.add(record[recordIndex++]); // メーカ名
+            tmpList.add(record[recordIndex++]);  // 単価
+            tmpList.add(record[recordIndex++]);  // 業提フラグ
+            //
+            tmpList.add(record[recordIndex++]); // 日計表フラグ
+            //
+            tmpList.add(record[recordIndex++]);  // 調書枝番号
+            tmpList.add(record[recordIndex++]);  // 仕様書番号
+            tmpList.add(record[recordIndex++]);  // 合価２
+            tmpList.add(record[recordIndex++]);  // 記事（内訳）
+            tmpList.add(record[recordIndex++]);  // 要求種別
+            tmpList.add(record[recordIndex++]);  // 在再別フラグ
+            tmpList.add(record[recordIndex++]);  // ソート用レコード通番
+            tmpList.add(record[recordIndex++]);  // 物品レコード通番
+            tmpList.add(record[recordIndex++]);  // 最終ステータスフラグ
+            tmpList.add(record[recordIndex++]);  // 架名
+            tmpList.add(record[recordIndex++]);  // 架番号
+            tmpList.add(record[recordIndex++]);  // 装置名
+            tmpList.add(record[recordIndex++]);  // 装置番号
+            recordIndex++;
+            tmpList.add(record[recordIndex++]);  // 物品情報グループID
+            tmpList.add(record[recordIndex++]);  // 物品情報グループID通番
+            
+            // リストに格納
+            bunkatuList.add(tmpList.toArray());
+        }
+        
+        // 一覧と合計値を下り電文に設定
+        addResponseData(BUNKATU_KENSAKU[denbunIndex++], bunkatuList);                 // 一覧
+        addResponseData(BUNKATU_KENSAKU[denbunIndex++], Double.toString(totalSuryo)); // 合計数量
+        addResponseData(BUNKATU_KENSAKU[denbunIndex++], Long.toString(totalGoka));    // 合計合価
+        
+        // 増減科目定数エンティティ生成
+        final N5Budmngkbn01Entity entityN5Budzog = (N5Budmngkbn01Entity) getEntity(N5Budmngkbn01Entity.class);
+        
+        // 検索処理実行
+        List zogList = entityN5Budzog.findAllKanrikubun();
+        
+        StringBuilder builder = new StringBuilder();
+        for( itr = zogList.iterator(); itr.hasNext(); ) {
+            Object[] obj = (Object[])itr.next();
+            if( builder.length() > 0 ) {
+                builder = builder.append(",");
+            }
+            builder = builder.append(obj[0]);
+        }
+        
+         // 増減科目一覧を下り電文に設定
+        addResponseData(BUNKATU_KENSAKU[denbunIndex++], new String(builder));    // 管理区分項目リスト   
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeBunkatuKensaku() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] 内訳分割データ登録
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳レコード通番に紐付く分割レコードの情報を削除し、<br/>
+     *         新規に上り電文の分割情報を登録します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     * @throws BusinessException
+     */
+    public void utiwakeBunkatuToroku() throws SystemException, BusinessException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("utiwakeBunkatuToroku() - start");
+        }
+         
+        int denbunIndex = 0;  // 電文カウンタインデックス
+        String msdId = "NNCN0001";
+
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(BUNKATU_TOROKU[denbunIndex++]);      // 施工組織コード
+        final String utiwakeRec = getRequestData(BUNKATU_TOROKU[denbunIndex++]);    // 内訳レコード通番
+        final List bunkatuList = getRequestListData(BUNKATU_TOROKU[denbunIndex++]); // 分割情報一覧
+        //
+        final String sogoBango = getRequestData(BUNKATU_TOROKU[denbunIndex++]);     // 総合工事番号
+        final String kojiBango = getRequestData(BUNKATU_TOROKU[denbunIndex++]);     // 工事計画番号        
+        final String zog = getRequestData(BUNKATU_TOROKU[denbunIndex++]);           // 増減科目
+        final String mngskh = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 管理責任者（新）
+        final String sv_cd = getRequestData(BUNKATU_TOROKU[denbunIndex++]);         // サービスコード
+        final String kob_cd = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 個別コード
+        final String htiutwkhf = getRequestData(BUNKATU_TOROKU[denbunIndex++]);     // 本体内訳-構成品フラグ"
+        final String kna = getRequestData(BUNKATU_TOROKU[denbunIndex++]);           // カナ品名
+        final String ablen = getRequestData(BUNKATU_TOROKU[denbunIndex++]);         // AB長
+        final String szuym = getRequestData(BUNKATU_TOROKU[denbunIndex++]);         // 製造年月
+        final String szuban = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 製造番号
+        final String choban = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 調書番号
+        final String butucd = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 物品コード
+        final String recCnt = getRequestData(BUNKATU_TOROKU[denbunIndex++]);        // 分割レコード数
+        
+        final String uktBktRec = getRequestData(BUNKATU_TOROKU[denbunIndex++]);     // 分割通番
+        
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        // 内訳データ変更情報エンティティ生成
+        final N5Buiuhj01Entity entityN5Buiuhj = (N5Buiuhj01Entity) getEntity(N5Buiuhj01Entity.class);
+
+        int delUtwCnt = 0;
+        int delUhjCnt = 0;
+        int insUtwCnt = 0;
+        int insUhjCnt = 0;
+        
+        try {
+            // 所内内訳書レコード通番最大値取得
+            int MaxUtwRec = entityN5Buiutw.getMaxRec(sekoCode, sogoBango, kojiBango);
+            
+            // 削除対象レコード通番検索
+            List retList = entityN5Buiutw.findByKeyBunkatuRecord(sekoCode, sogoBango, kojiBango, uktBktRec, utiwakeRec);
+            for( Iterator itr = retList.iterator(); itr.hasNext(); ) {
+                Object[] record = (Object[])itr.next();
+
+                // 所内内訳書、内訳データ変更情報 排他参照
+                if( entityN5Buiutw.findByKeyBuppinRecordForUpdate(sekoCode, sogoBango, kojiBango, record[63].toString()) > 0 ||
+                        entityN5Buiuhj.findByKeyBuppinRecordForUpdate(sekoCode, sogoBango, kojiBango, record[63].toString()) > 0  ) {
+
+                    // 所内内訳書データ削除
+                    delUtwCnt += entityN5Buiutw.deleteRecordByUtwrec(sekoCode, sogoBango, kojiBango, record[63].toString());
+                    // 内訳データ変更情報データ削除
+                    delUhjCnt += entityN5Buiuhj.deleteRecordByUhjrec(sekoCode, sogoBango, kojiBango, record[63].toString());
+
+                } else {
+                    // 排他失敗
+                    // 下り電文設定
+                    if( log.isDebugEnabled() ) {
+                        log.debug("utiwakeBunkatuToroku() - Error - NNCW0005");
+                    }
+                    Message message = new Message("NNCW0005");
+                    throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku()");
+                }
+   
+            }
+
+            // 分割データ登録
+            Method method = null;
+            Class[] aryClzz = new Class[] { Object.class };
+            Object[] aryObj = new Object[1];
+            Date systemDate = DateUtil.getDate();
+
+            // 分割情報DTO生成
+            N5Buibutuwkbkj01DTO dto = new N5Buibutuwkbkj01DTO();
+            // ビルコード定数Entity
+            N5Skdbilcd01Entity bilcdEntity = (N5Skdbilcd01Entity)getEntity(N5Skdbilcd01Entity.class);
+            
+            // 一覧件数分ループ
+            for (Iterator itr = bunkatuList.iterator(); itr.hasNext(); ) {
+                ArrayList columnArray = (ArrayList)itr.next();
+                // ボタン項目を削除
+                columnArray.remove(5);
+                columnArray.remove(3);
+                columnArray.remove(2);
+                columnArray.trimToSize();
+                
+                // ビルコード定数存在チェック
+                String bilCode = (String)columnArray.get(1);
+
+                if( bilcdEntity.isBillCodeExists(sekoCode, bilCode) == 0 ) {
+                    // ビルコードが存在しない
+                    // 下り電文設定
+                    if( log.isDebugEnabled() ) {
+                        log.debug("utiwakeBunkatuToroku() - Error - NNCW0047");
+                    }
+                    String[] umekomi = new String[2];
+                    umekomi[0] = "ビルコード定数";
+                    umekomi[1] = bilCode;
+                    
+                    Message msg = new Message("NNCW0047", umekomi);
+                    throw new BusinessException(msg, "SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku()");
+                }
+                
+                // 初期化
+                int methodIndex = 0;
+                dto.clear();
+                aryObj[0] = null;
+                Object retObj = null;
+                // 一行の列数分ループ
+                Iterator columnItr = columnArray.iterator();
+                for(methodIndex = 0; columnItr.hasNext(); methodIndex++) {
+                    // 列のデータを取得
+                    aryObj[0] = columnItr.next();
+                    method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex], aryClzz );
+                    retObj = method.invoke(dto, aryObj);
+                }
+                
+                //methodIndexを再設定
+                methodIndex = 47;
+                // 最終更新年月日を設定
+                aryObj[0] = systemDate;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 内訳レコード通番を設定
+                aryObj[0] = new BigDecimal(++MaxUtwRec);
+                
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+                
+                // 施工組織コード
+                aryObj[0] = sekoCode;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);                    
+
+                // 総合工事番号
+                aryObj[0] = sogoBango;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 工事計画番号
+                aryObj[0] = kojiBango;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 増減科目
+                aryObj[0] = zog;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 管理責任者（新）
+                aryObj[0] = mngskh;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // サービスコード
+                aryObj[0] = sv_cd;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+                
+                // 個別コード
+                aryObj[0] = kob_cd;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 本体内訳-構成品フラグ"
+                aryObj[0] = htiutwkhf;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // カナ品名
+                aryObj[0] = kna;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // AB長
+                aryObj[0] = ablen;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 製造年月
+                aryObj[0] = szuym;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 製造番号
+                aryObj[0] = szuban;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+
+                // 調書番号
+                aryObj[0] = choban;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+                
+                // 物品コード
+                aryObj[0] = butucd;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex++], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+                
+                // 分割レコード数
+                aryObj[0] = recCnt;
+                method = (N5Buibutuwkbkj01DTO.class).getMethod(N5Buibutuwkbkj01DTO.SET_METHOD_DEFINE[methodIndex], aryClzz );
+                retObj = method.invoke(dto, aryObj);
+                
+                if( log.isDebugEnabled() ) {
+                    log.debug("戻り値：" + retObj);
+                }
+                
+                insUtwCnt += entityN5Buiutw.insertBunkatuRecord(dto);
+                insUhjCnt += entityN5Buiuhj.insertBunkatuRecord(dto);                    
+            }
+
+            if( log.isDebugEnabled() ) {
+                log.debug("所内内訳書         分割情報削除件数：" + delUtwCnt);
+                log.debug("内訳データ変更情報 分割情報削除件数：" + delUhjCnt);
+                log.debug("所内内訳書         分割情報追加件数：" + insUtwCnt);
+                log.debug("内訳データ変更情報 分割情報追加件数：" + insUhjCnt);
+            }
+
+            // 下り電文設定
+            addResponseData(BUNKATU_TOROKU[denbunIndex++], msdId);
+            
+            if( log.isDebugEnabled() ) {
+                log.debug("utiwakeBunkatuToroku() - end");
+            }
+            
+        } catch ( UniqueKeyException e ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0003");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku()", e);
+        } catch ( ResourceBusyException e ) {
+            // 業務エラーを設定
+            Message message = new Message("NNCW0005");
+            throw new BusinessException(message, "SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku()", e);
+        } catch ( NoSuchMethodException e ) {
+            /* 設施41-0055対応 */
+            this.setMessage(new Message("NNCE0991"));
+            throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku", e);
+        } catch (IllegalArgumentException e) {
+            /* 設施41-0055対応 */
+            this.setMessage(new Message("NNCE0991"));
+            throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku", e);
+        } catch (IllegalAccessException e) {
+            /* 設施41-0055対応 */
+            this.setMessage(new Message("NNCE0991"));
+            throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku", e);
+        } catch (InvocationTargetException e) {
+            /* 設施41-0055対応 */
+            this.setMessage(new Message("NNCE0991"));
+            throw new SystemException("E-20055","SyonaiUtiwakesyoSakuseiLogic#utiwakeBunkatuToroku", e);
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] ビル名検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] ビルコードに紐付くビル名を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void billNameKensaku() throws SystemException {
+    
+        if( log.isDebugEnabled() ) {
+            log.debug("billNameKensaku() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(BILL_NAME_KENSAKU[0]);   // 施工組織コード
+        final String billCode = getRequestData(BILL_NAME_KENSAKU[1]);   // ビルコード
+        
+        // ビルコード定数エンティティ生成
+        final N5Skdbilcd01Entity entityN5SkdbilcdEntity = (N5Skdbilcd01Entity) getEntity(N5Skdbilcd01Entity.class);
+        
+        // 略称ビル名検索処理呼出し
+        String retBillName = entityN5SkdbilcdEntity.findByKeyRyakusyoBillName(sekoCode, billCode);
+        
+        // 下り電文に略称ビル名リストを設定
+        addResponseData(BILL_NAME_KENSAKU[2], retBillName);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("billNameKensaku() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] 本体内訳名検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 本体内訳名を検索します
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void hontaiUtiwakemeiKensaku() throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("hontaiUtiwakemeiKensaku() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String setubi = getRequestData(HONTAI_UTIWAKE_KENSAKU[0]);    // 設備
+        final String syumoku = getRequestData(HONTAI_UTIWAKE_KENSAKU[1]);   // 種目
+        final String saimoku = getRequestData(HONTAI_UTIWAKE_KENSAKU[2]);   // 細目
+        final String saibun = getRequestData(HONTAI_UTIWAKE_KENSAKU[3]);    // 細分
+        final String seiriCode = getRequestData(HONTAI_UTIWAKE_KENSAKU[4]); // 整理コード
+        
+        // 所内固定資産定数エンティティ生成
+        final N5Budsnikos01Entity entityN5Skdbilcd = (N5Budsnikos01Entity) getEntity(N5Budsnikos01Entity.class);
+        
+        // 本体内訳名検索処理呼出し
+        final String retHontaiutiwakemei = entityN5Skdbilcd.getHontaiUtiwakemei(setubi, syumoku, saimoku, saibun, seiriCode);
+        
+        // 下り電文に略称ビル名リストを設定
+        addResponseData(HONTAI_UTIWAKE_KENSAKU[5], retHontaiutiwakemei);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("hontaiUtiwakemeiKensaku() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] ダイアログ用ビル検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] ダイアログで表示するビルコードとビル名のリスト検索
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void billKensaku() throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("billKensaku() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(BILL_KENSAKU[0]);        // 施工組織コード
+        final String sogoNumber = getRequestData(BILL_KENSAKU[1]);      // 総合工事番号
+        final String kojiNumber = getRequestData(BILL_KENSAKU[2]);      // 工事計画番号
+        final String kanriCode = getRequestData(BILL_KENSAKU[3]);       // 管理組織コード
+        final String kensakuFLg = getRequestData(BILL_KENSAKU[4]);      // 検索フラグ
+        final String kensakuBilName = getRequestData(BILL_KENSAKU[5]);  // 略称ビル名
+        
+        List billList = null;
+        // ビルコード定数エンティティ生成
+        final N5Skdbilcd01Entity entityN5Skdbilcd = (N5Skdbilcd01Entity) getEntity(N5Skdbilcd01Entity.class);
+        
+        // 検索パターンによって処理の振分け
+        if( KENSAKU_PATTERN_KOTUSIJI.equals(kensakuFLg) ) {
+            
+            // 工通指示検索
+            billList = entityN5Skdbilcd.findByKeyBillListByKotusijiKensaku(sekoCode, kojiNumber);
+
+            if( billList.size() > 0 ) {
+                addResponseData(BILL_KENSAKU[6], billList);
+            } else {
+                addResponseData(BILL_KENSAKU[6], billList);
+                addResponseData(BILL_KENSAKU[7], "NNCW0007");
+            }
+            
+            if( log.isDebugEnabled() ) {
+                log.debug("billKensaku() - end");
+            }
+                
+            return;
+            
+        } else if( KENSAKU_PATTERN_BILL.equals(kensakuFLg) ) {
+            // ビル検索
+            billList = entityN5Skdbilcd.findByKeyBillListByNormal(sekoCode, sogoNumber, kojiNumber, kanriCode, kensakuBilName);
+            
+            if( billList.size() > 0 ) {
+                addResponseData(BILL_KENSAKU[6], billList);                
+            } else {
+                
+                if(kensakuBilName.length() == 0) {
+                    addResponseData(BILL_KENSAKU[6], billList);
+                    addResponseData(BILL_KENSAKU[7], "NNCW0029");
+                    addResponseData(BILL_KENSAKU[8], "ビル名");
+                } else {
+                    billList = entityN5Skdbilcd.findByKeyBillListByNoKanriCode(sekoCode, kensakuBilName);
+                    addResponseData(BILL_KENSAKU[6], billList);
+                }
+            }
+        }
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("billKensaku() - end");
+        }
+    }
+    
+    /**
+     * <p>
+     * [概 要] ダイアログ用ユニットコード検索
+     * </p>
+     * 
+     * <p>
+     * [詳 細] ダイアログで表示するユニットコードのリスト検索
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @throws SystemException
+     */
+    public void unitCodeKensaku() throws SystemException {
+
+        if( log.isDebugEnabled() ) {
+            log.debug("unitCodeKensaku() - start");
+        }
+        
+        // クライアントから上り電文取得
+        final String sekoCode = getRequestData(UNIT_KENSAKU[0]);        // 施工組織コード
+        final String billCode = getRequestData(UNIT_KENSAKU[1]);        // ビルコード
+        
+        // ビルコード定数エンティティ生成
+        final N5Skduntcd01Entity entityN5Skduntcd = (N5Skduntcd01Entity) getEntity(N5Skduntcd01Entity.class);
+        
+        // ユニット検索
+        List unitList = entityN5Skduntcd.findByKeyUnitList(sekoCode, billCode);
+
+        addResponseData(UNIT_KENSAKU[2], unitList);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("unitCodeKensaku() - end");
+        }
+    } 
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 工事内訳一覧共通検索処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 工事内訳一覧検索時に呼ばれる検索共通メソッド
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @param dto
+     * @return 物品情報
+     * @throws SystemException
+     */
+    private List commonKensaku(final N5UtiwakeKensaku01DTO dto) throws SystemException {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("commonKensaku() - start");
+        }
+
+        // 所内内訳書エンティティ生成
+        final N5Buiutw01Entity entityN5Buiutw = (N5Buiutw01Entity) getEntity(N5Buiutw01Entity.class);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("commonKensaku() - end");
+        }
+
+        // 検索処理実行
+        return entityN5Buiutw.findByKeyDynamicSQL(dto);
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] CSVデータ作成共通処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] CSV出力処理時に呼ばれるCSV情報作成共通メソッド
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     * 
+     * @param csvData
+     */
+    private void commonCreateCsvStreamData(final StringBuilder csvData) {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("commonCreateCsvStreamData() - start");
+        }
+        
+        // StringBuilder型csvデータをStringに変換する
+        final String outData = new String(csvData);
+        
+        InputStream inputStream = null;
+
+        // ダウンロード用のInputStreamオブジェクトを生成する
+        try {
+            // 仕施87eM-0002 ○MS932 ×Shift_JIS で文字生成
+            // inputStream = new ByteArrayInputStream(outData.getBytes(MOJI_CODE));
+            inputStream = new ByteArrayInputStream(outData.getBytes(FileIoUtil.WINDOWS_31J));
+        } catch (UnsupportedEncodingException e) {
+            // 文字コードをサポートしていない場合、OS標準文字コードで生成
+            inputStream = new ByteArrayInputStream(outData.getBytes());
+        }
+        
+        // ダウンロードファイルとしてオブジェクトにセットする
+        super.setDownloadFile(inputStream);
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("commonCreateCsvStreamData() - end");
+        }
+    }
+    
+    /**
+     * 
+     * <p>
+     * [概 要] 数量設定共通処理
+     * </p>
+     * 
+     * <p>
+     * [詳 細] 内訳CSVデータ作成時に使用する数量設定共通メソッド
+     * </p>
+     * 
+     * <p>
+     * [備 考]
+     * </p>
+     *
+     * @param record
+     * @param baseBuilder
+     * @return StringBuilder
+     */
+    private StringBuilder formerSuryo(final Object[] record, final StringBuilder baseBuilder) {
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("formerSuryo() - start");
+        }
+
+        StringBuilder csvBuilder = baseBuilder;
+        
+        String zogenKamoku = (String)record[ZOGEN_INDEX];
+        String hontaiKoseihinFlg = (String)record[HONTAI_KOSEI_INDEX];
+        
+        if( "41".equals(zogenKamoku) ) {
+            // 新設の場合
+            if( "0".equals(hontaiKoseihinFlg) ) {
+                csvBuilder = csvBuilder.append("0.0");
+                csvBuilder = csvBuilder.append(COMMA);
+                csvBuilder = csvBuilder.append(record[SURYO_INDEX]);
+                csvBuilder = csvBuilder.append(COMMA);
+            } else {
+                csvBuilder = csvBuilder.append(record[SURYO_INDEX]);
+                csvBuilder = csvBuilder.append(COMMA);
+                csvBuilder = csvBuilder.append("0.0");
+                csvBuilder = csvBuilder.append(COMMA);
+            }
+            
+            csvBuilder = csvBuilder.append(record[SURYO_INDEX]);
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+        } else if( "81".equals(zogenKamoku) ) {
+            // 撤去の場合
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append(record[SURYO_INDEX]);       // 撤去数量
+        } else {
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+            csvBuilder = csvBuilder.append(COMMA);
+            csvBuilder = csvBuilder.append("0.0");
+        }
+        
+        if( log.isDebugEnabled() ) {
+            log.debug("formerSuryo() - end");
+        }
+        
+        return csvBuilder;
+    }
+    //******内訳分割ここまで******//
+
+    // 2010.10.20 故施58P-0018 装置番号4桁対応 add
+    //******東西判定ここから******//
+    /**
+     * <p>[概 要] 東西識別の取得。</p>
+     * <p>[詳 細] SystemUtilより東西識別を取得する。</p>
+     * <p>[備 考] 東：1 西：1以外</p>
+     *
+     * @return 東西識別
+     * @throws BusinessException 業務エラー
+     * @throws SystemException システムエラー
+     */
+    private final String getEastWest() throws BusinessException, SystemException {
+        int ew = SystemUtil.checkCenterCodeDirection(getCenterCode());
+        if (ew == 1) {
+            return "E";
+        } else {
+            return "W";
+        }
+    }
+    //******東西判定ここまで******//
+    // 2010.10.20 故施58P-0018 装置番号4桁対応 end
+//------------メソッド定義ここまで-------------------------------------------------------------------//
+
+}
+
+
