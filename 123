@@ -32,6 +32,141 @@ public final void buppinCsvSakusei() throws BusinessException, SystemException {
         // データ行の出力
         for (Object obj : listButCsv) {
             Object[] fields = (Object[]) obj;
+            sb.append(formatNumberField(fields[0], 8))     
+              .append(",")
+              // ... [その他のappend処理は変更なし] ...
+              .append("\n");
+        }
+        fileIo.writeFileString(sb.toString());
+        
+        // ファイルを下り電文に設定
+        try {
+            java.io.InputStream is = new java.io.FileInputStream(csvFilePath);
+            setDownloadFile(is);
+        } catch (java.io.IOException e) {
+            throw new SystemException("E-90001", "Failed to create FileInputStream", e);
+        }
+        
+    } finally {
+        fileIo.closeFile();
+    }
+
+    if (log.isDebugEnabled()) {
+        log.debug("buppinCsvSakusei() - end");
+    }
+}
+
+/**
+ * <p>[概 要] 請負費ＣＳＶ作成</p>
+ * <p>[詳 細] 請負費CSVデータを作成し、CSVファイルとして返却する</p>
+ * @throws SystemException システムエラー発生
+ * @throws BusinessException 業務例外発生
+ */
+public final void ukeoiCsvSakusei() throws BusinessException, SystemException {
+    if (log.isDebugEnabled()) {
+        log.debug("ukeoiCsvSakusei() - start");
+    }
+
+    // 記載工程細分別エンティティ生成
+    final N5Skiksksib02Entity entityKskSib = (N5Skiksksib02Entity) getEntity(N5Skiksksib02Entity.class);
+
+    // CSVファイル名を生成
+    String csvFileName = this.getCenterCode() + "P316030005" + this.getUserID() + DateUtil.getDate("hhmmss") + ".csv";
+    String csvFilePath = SystemUtil.getSystemInfo("print.data.path") + csvFileName;
+
+    // 請負費CSVデータを検索
+    List listUoiCsv = entityKskSib.search(getRequestData(D_SKS_CD), getRequestData(D_SKJBAN));
+
+    if (listUoiCsv.size() == 0) {
+        throw new BusinessException(new Message("NNCW0007"),
+            "UkewatashisyoSakuseiLogic#ukeoiCsvSakusei()");
+    }
+
+    // CSVファイル作成
+    FileIoUtil fileIo = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
+    try {
+        StringBuilder sb = new StringBuilder();
+        
+        // データ行の出力
+        for (Object obj : listUoiCsv) {
+            Object[] fields = (Object[]) obj;
+            sb.append(formatNumberField(fields[0], 8))     
+              .append(",")
+              // ... [その他のappend処理は変更なし] ...
+              .append("\n");
+        }
+        fileIo.writeFileString(sb.toString());
+        
+        // ファイルを下り電文に設定
+        try {
+            java.io.InputStream is = new java.io.FileInputStream(csvFilePath);
+            setDownloadFile(is);
+        } catch (java.io.IOException e) {
+            throw new SystemException("E-90001", "Failed to create FileInputStream", e);
+        }
+        
+    } finally {
+        fileIo.closeFile();
+    }
+
+    if (log.isDebugEnabled()) {
+        log.debug("ukeoiCsvSakusei() - end");
+    }
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+-----------------------------------
+
+/**
+ * <p>[概 要] 物品費ＣＳＶ作成</p>
+ * <p>[詳 細] 物品費CSVデータを作成し、CSVファイルとして返却する</p>
+ * @throws SystemException システムエラー発生
+ * @throws BusinessException 業務例外発生
+ */
+public final void buppinCsvSakusei() throws BusinessException, SystemException {
+    if (log.isDebugEnabled()) {
+        log.debug("buppinCsvSakusei() - start");
+    }
+
+    // 通建会社組織定数エンティティ生成
+    final N5Buisgiukh02Entity entitySgiUkh = (N5Buisgiukh02Entity) getEntity(N5Buisgiukh02Entity.class);
+
+    // CSVファイル名を生成
+    String csvFileName = this.getCenterCode() + "P316030004" + this.getUserID() + DateUtil.getDate("hhmmss") + ".csv";
+    String csvFilePath = SystemUtil.getSystemInfo("print.data.path") + csvFileName;
+
+    // 物品費CSVデータを検索
+    List listButCsv = entitySgiUkh.search(getRequestData(D_SKS_CD), getRequestData(D_SKJBAN));
+
+    if (listButCsv.size() == 0) {
+        throw new BusinessException(new Message("NNCW0007"),
+            "UkewatashisyoSakuseiLogic#buppinCsvSakusei()");
+    }
+
+    // CSVファイル作成
+    FileIoUtil fileIo = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
+    try {
+        StringBuilder sb = new StringBuilder();
+        
+        // データ行の出力
+        for (Object obj : listButCsv) {
+            Object[] fields = (Object[]) obj;
             sb.append(formatNumberField(fields[0], 8))     // 総合工事番号: 半角数字8桁
               .append(",")
               .append(formatTextField(fields[1], 23))      // 工事計画番号: 半角文字23桁 
