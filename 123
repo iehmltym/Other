@@ -20,26 +20,59 @@ public final void buppinCsvSakusei() throws BusinessException, SystemException {
     List listButCsv = entitySgiUkh.search(getRequestData(D_SKS_CD), getRequestData(D_SKJBAN));
 
     if (listButCsv.size() == 0) {
-        throw new BusinessException(new Message("NNCW0007"), 
+        throw new BusinessException(new Message("NNCW0007"),
             "UkewatashisyoSakuseiLogic#buppinCsvSakusei()");
     }
 
     // CSVファイル作成
     FileIoUtil fileIo = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
     try {
-        // ヘッダー行を出力
         StringBuilder sb = new StringBuilder();
-        sb.append("総合工事番号,工事計画番号,増減科目,ビル・収容区域コード,共通アイテムコード,管理区分,設備,")
-          .append("種目,細目,細分,細分名,保管課コード,開始年月,受渡数量,工程種別コード,記載工程コード,")
-          .append("記載工程名,単位,数量,請負費\n");
-
-        // データ行を出力
-        for (Object record : listButCsv) {
-            Object[] fields = (Object[]) record;
-            // CSV形式でデータを組み立て
-            sb.append(formatCsvLine(fields));
+        
+        // データ行の出力
+        for (Object obj : listButCsv) {
+            Object[] fields = (Object[]) obj;
+            sb.append(formatNumberField(fields[0], 8))     // 総合工事番号: 半角数字8桁
+              .append(",")
+              .append(formatTextField(fields[1], 23))      // 工事計画番号: 半角文字23桁 
+              .append(",")
+              .append(formatNumberField(fields[2], 2))     // 増減科目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[3], 10))    // ビル・収容区域コード: 半角数字10桁
+              .append(",")
+              .append(formatNumberField(fields[4], 7))     // 共通アイテム: 半角数字7桁
+              .append(",")
+              .append(formatNumberField(fields[5], 2))     // 管理区分: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[6], 3))     // 設備: 半角数字3桁
+              .append(",")
+              .append(formatNumberField(fields[7], 2))     // 種目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[8], 2))     // 細目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[9], 2))     // 細分: 半角数字2桁
+              .append(",")
+              .append(formatTextField(fields[10], 50))     // 細分名: 全角文字50桁
+              .append(",")
+              .append(formatTextField(fields[11], 5))      // 保管課コード: 半角英数字5桁
+              .append(",")
+              .append(formatTextField(fields[12], 7))      // 開始年月: 半角文字7桁
+              .append(",")
+              .append(formatNumberField(fields[13], 12))   // 受渡数量: 半角数字12桁
+              .append(",")
+              .append(formatNumberField(fields[14], 1))    // 工程種別コード: 半角数字1桁
+              .append(",")
+              .append(formatNumberField(fields[15], 6))    // 記載工程コード: 半角数字6桁
+              .append(",")
+              .append(formatTextField(fields[16], 8))      // 記載工程名: 全角文字8桁
+              .append(",")
+              .append(formatTextField(fields[17], 5))      // 単位: 半角文字5桁
+              .append(",")
+              .append(formatNumberField(fields[18], 12))   // 数量: 半角数字12桁
+              .append(",")
+              .append(formatNumberField(fields[19], 12))   // 請負費: 半角数字12桁
+              .append("\n");
         }
-
         fileIo.writeFileString(sb.toString());
     } finally {
         fileIo.closeFile();
@@ -53,99 +86,21 @@ public final void buppinCsvSakusei() throws BusinessException, SystemException {
     }
 }
 
-
-
-
 /**
- * CSVの1行をフォーマットする
- * @param fields データフィールド
- * @return CSV形式の文字列
- */
-private String formatCsvLine(Object[] fields) {
-    StringBuilder line = new StringBuilder();
-    
-    // 各フィールドをCSV形式に変換
-    line.append(formatCsvField(fields[0], 8, true))  // 総合工事番号
-        .append(",")
-        .append(formatCsvField(fields[1], 23, false))  // 工事計画番号
-        .append(",")
-        .append(formatCsvField(fields[2], 2, true))   // 増減科目
-        .append(",")
-        .append(formatCsvField(fields[3], 10, true))  // ビル・収容区域コード
-        .append(",")
-        .append(formatCsvField(fields[4], 7, false))  // 共通アイテムコード
-        .append(",")
-        .append(formatCsvField(fields[5], 2, false))  // 管理区分
-        .append(",")
-        .append(formatCsvField(fields[6], 3, true))   // 設備
-        // ... 残りのフィールドも同様に追加
-        .append("\n");
-        
-    return line.toString();
-}
-
-/**
- * CSV用のフィールド値をフォーマット
- * @param value フィールド値
- * @param length 指定長
- * @param isNumeric 数値項目フラグ
- * @return フォーマット済み文字列
- */
-private String formatCsvField(Object value, int length, boolean isNumeric) {
-    if (value == null) {
-        return isNumeric ? StringUtils.repeat("0", length) : "";
-    }
-    
-    String str = value.toString().trim();
-    
-    if (isNumeric) {
-        // 数値項目は右寄せ、0埋め
-        return StringUtils.leftPad(str, length, '0');
-    } else {
-        // 文字項目は左寄せ
-        return str;
-    }
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-/**
- * <p>[概 要] 請負費ＣＳＶ作成</p>  
+ * <p>[概 要] 請負費ＣＳＶ作成</p>
  * <p>[詳 細] 請負費CSVデータを作成し、CSVファイルとして返却する</p>
  * @throws SystemException システムエラー発生
  * @throws BusinessException 業務例外発生
  */
 public final void ukeoiCsvSakusei() throws BusinessException, SystemException {
     if (log.isDebugEnabled()) {
-        log.debug("ukeoiCsvSakusei() - start"); 
+        log.debug("ukeoiCsvSakusei() - start");
     }
 
     // 記載工程細分別エンティティ生成
     final N5Skiksksib02Entity entityKskSib = (N5Skiksksib02Entity) getEntity(N5Skiksksib02Entity.class);
 
-    // CSVファイル名を生成 
+    // CSVファイル名を生成
     String csvFileName = this.getCenterCode() + "P316030005" + this.getUserID() + DateUtil.getDate("hhmmss") + ".csv";
     String csvFilePath = SystemUtil.getSystemInfo("print.data.path") + csvFileName;
 
@@ -154,24 +109,58 @@ public final void ukeoiCsvSakusei() throws BusinessException, SystemException {
 
     if (listUoiCsv.size() == 0) {
         throw new BusinessException(new Message("NNCW0007"),
-                "UkewatashisyoSakuseiLogic#ukeoiCsvSakusei()");
+            "UkewatashisyoSakuseiLogic#ukeoiCsvSakusei()");
     }
 
     // CSVファイル作成
     FileIoUtil fileIo = new FileIoUtil(csvFilePath, FileIoUtil.WRITE_STRING, FileIoUtil.WINDOWS_31J);
     try {
-        // ヘッダー行を出力
         StringBuilder sb = new StringBuilder();
-        sb.append("総合工事番号,工事計画番号,増減科目,ビル・収容区域コード,共通アイテムコード,管理区分,設備,")
-          .append("種目,細目,細分,細分名,保管課コード,開始年月,受渡数量,工程種別コード,記載工程コード,")
-          .append("記載工程名,単位,数量,請負費\n");
-
+        
         // データ行の出力
-        for (Object record : listUoiCsv) {
-            Object[] fields = (Object[]) record;
-            sb.append(formatUkeoiCsvLine(fields));
+        for (Object obj : listUoiCsv) {
+            Object[] fields = (Object[]) obj;
+            sb.append(formatNumberField(fields[0], 8))     // 総合工事番号: 半角数字8桁
+              .append(",")
+              .append(formatTextField(fields[1], 23))      // 工事計画番号: 半角文字23桁 
+              .append(",")
+              .append(formatNumberField(fields[2], 2))     // 増減科目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[3], 10))    // ビル・収容区域コード: 半角数字10桁
+              .append(",")
+              .append(formatNumberField(fields[4], 7))     // 共通アイテム: 半角数字7桁
+              .append(",")
+              .append(formatNumberField(fields[5], 2))     // 管理区分: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[6], 3))     // 設備: 半角数字3桁
+              .append(",")
+              .append(formatNumberField(fields[7], 2))     // 種目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[8], 2))     // 細目: 半角数字2桁
+              .append(",")
+              .append(formatNumberField(fields[9], 2))     // 細分: 半角数字2桁
+              .append(",")
+              .append(formatTextField(fields[10], 50))     // 細分名: 全角文字50桁
+              .append(",")
+              .append(formatTextField(fields[11], 5))      // 保管課コード: 半角英数字5桁
+              .append(",")
+              .append(formatTextField(fields[12], 7))      // 開始年月: 半角文字7桁
+              .append(",")
+              .append(formatNumberField(fields[13], 12))   // 受渡数量: 半角数字12桁
+              .append(",")
+              .append(formatNumberField(fields[14], 1))    // 工程種別コード: 半角数字1桁
+              .append(",")
+              .append(formatNumberField(fields[15], 6))    // 記載工程コード: 半角数字6桁
+              .append(",")
+              .append(formatTextField(fields[16], 8))      // 記載工程名: 全角文字8桁
+              .append(",")
+              .append(formatTextField(fields[17], 5))      // 単位: 半角文字5桁
+              .append(",")
+              .append(formatNumberField(fields[18], 12))   // 数量: 半角数字12桁
+              .append(",")
+              .append(formatNumberField(fields[19], 12))   // 請負費: 半角数字12桁
+              .append("\n");
         }
-
         fileIo.writeFileString(sb.toString());
     } finally {
         fileIo.closeFile();
@@ -186,286 +175,37 @@ public final void ukeoiCsvSakusei() throws BusinessException, SystemException {
 }
 
 /**
- * 請負費CSV用の1行をフォーマットする
- * @param fields データフィールド
- * @return CSV形式の文字列
- */
-private String formatUkeoiCsvLine(Object[] fields) {
-    StringBuilder line = new StringBuilder();
-    
-    // 総合工事番号 (8桁)
-    line.append(formatCsvField(fields[0], 8, true)).append(",");
-    
-    // 工事計画番号 (23桁)
-    line.append(formatCsvField(fields[1], 23, false)).append(",");
-    
-    // 増減科目 (2桁)
-    line.append(formatCsvField(fields[2], 2, true)).append(",");
-    
-    // ビル・収容区域コード (10桁)
-    line.append(formatCsvField(fields[3], 10, true)).append(",");
-    
-    // 共通アイテムコード (7桁)
-    line.append(formatCsvField(fields[4], 7, false)).append(",");
-    
-    // 管理区分 (2桁)
-    line.append(formatCsvField(fields[5], 2, false)).append(",");
-    
-    // 設備 (3桁)
-    line.append(formatCsvField(fields[6], 3, true)).append(",");
-    
-    // 種目 (2桁)
-    line.append(formatCsvField(fields[7], 2, true)).append(",");
-    
-    // 細目 (2桁)
-    line.append(formatCsvField(fields[8], 2, true)).append(",");
-    
-    // 細分 (2桁)
-    line.append(formatCsvField(fields[9], 2, true)).append(",");
-    
-    // 細分名 (50桁)
-    line.append(formatCsvField(fields[10], 50, false)).append(",");
-    
-    // 保管課コード (5桁)
-    line.append(formatCsvField(fields[11], 5, false)).append(",");
-    
-    // 開始年月 (7桁)
-    line.append(formatCsvField(fields[12], 7, false)).append(",");
-    
-    // 受渡数量 (12桁)
-    line.append(formatCsvField(fields[13], 12, true)).append(",");
-    
-    // 工程種別コード (1桁)
-    line.append(formatCsvField(fields[14], 1, false)).append(",");
-    
-    // 記載工程コード (6桁)
-    line.append(formatCsvField(fields[15], 6, false)).append(",");
-    
-    // 記載工程名 (8桁)
-    line.append(formatCsvField(fields[16], 8, false)).append(",");
-    
-    // 単位 (5桁)
-    line.append(formatCsvField(fields[17], 5, false)).append(",");
-    
-    // 数量 (12桁)
-    line.append(formatCsvField(fields[18], 12, true)).append(",");
-    
-    // 請負費 (12桁)
-    line.append(formatCsvField(fields[19], 12, true)).append("\n");
-    
-    return line.toString();
-}
-
-/**
- * 数値項目のフォーマット処理
- * @param value 数値
- * @param size 桁数
+ * 数値項目のフォーマット
+ * @param value 値
+ * @param length 桁数
  * @return フォーマット済み文字列
  */
-private String formatNumber(Object value, int size) {
+private String formatNumberField(Object value, int length) {
     if (value == null) {
-        return StringUtils.repeat("0", size);
+        return StringUtils.repeat("0", length);
     }
-    String strValue = value.toString().trim();
+    String strVal = value.toString().trim();
     // 数値以外の文字を除去
-    strValue = strValue.replaceAll("[^0-9]", "");
-    return StringUtils.leftPad(strValue, size, '0');
+    strVal = strVal.replaceAll("[^0-9]", "");
+    // 指定桁数に満たない場合は0埋め
+    return StringUtils.leftPad(strVal, length, '0');
 }
-
-
-
-
-
-
-
-// CSV出力関連の定数
-private static final String CSV_ENCODING = "Windows-31J";
-private static final String CSV_EXTENSION = ".csv";
-private static final String COMMA = ",";
-private static final String NEW_LINE = "\n";
-private static final String QUOTE = "\"";
-
-// ファイル名プレフィックス
-private static final String BUPPIN_FILE_PREFIX = "P316030004";
-private static final String UKEOI_FILE_PREFIX = "P316030005";
-
-// CSV項目長定義
-private static final int LENGTH_SOGO_KOJI_NO = 8;      // 総合工事番号
-private static final int LENGTH_KOJI_KEIKAKU_NO = 23;  // 工事計画番号
-private static final int LENGTH_ZOGEN_KAMOKU = 2;      // 増減科目
-private static final int LENGTH_BILL_CODE = 10;        // ビル・収容区域コード
-private static final int LENGTH_COMMON_ITEM = 7;       // 共通アイテムコード
-private static final int LENGTH_KANRI_KUBUN = 2;       // 管理区分
-private static final int LENGTH_SETSUBI = 3;           // 設備
-private static final int LENGTH_SHUMOKU = 2;           // 種目
-private static final int LENGTH_SAIMOKU = 2;           // 細目
-private static final int LENGTH_SAIBUN = 2;            // 細分
-private static final int LENGTH_SAIBUN_NAME = 50;      // 細分名
-private static final int LENGTH_HOKAN_CODE = 5;        // 保管課コード
-private static final int LENGTH_START_YM = 7;          // 開始年月
-private static final int LENGTH_UKEWTASHI_SURYO = 12;  // 受渡数量
-private static final int LENGTH_KOTEI_TYPE = 1;        // 工程種別コード
-private static final int LENGTH_KISAI_KOTEI = 6;       // 記載工程コード
-private static final int LENGTH_KOTEI_NAME = 8;        // 記載工程名
-private static final int LENGTH_TANI = 5;              // 単位
-private static final int LENGTH_SURYO = 12;            // 数量
-private static final int LENGTH_UKEOI_HI = 12;         // 請負費
-
-
-
-
-
-
 
 /**
- * CSV共通処理クラス
+ * 文字項目のフォーマット
+ * @param value 値
+ * @param length 桁数
+ * @return フォーマット済み文字列
  */
-private class CsvHelper {
-    private final StringBuilder content;
-    private final String filePath;
-    private final FileIoUtil fileIo;
-
-    /**
-     * コンストラクタ
-     * @param fileName ファイル名
-     */
-    public CsvHelper(String fileName) throws SystemException {
-        this.content = new StringBuilder();
-        this.filePath = SystemUtil.getSystemInfo("print.data.path") + fileName;
-        this.fileIo = new FileIoUtil(filePath, FileIoUtil.WRITE_STRING, CSV_ENCODING);
+private String formatTextField(Object value, int length) {
+    if (value == null) {
+        return StringUtils.repeat(" ", length);
     }
-
-    /**
-     * ヘッダー行を追加
-     * @param headers ヘッダー項目配列
-     */
-    public void addHeaders(String... headers) {
-        for (int i = 0; i < headers.length; i++) {
-            content.append(QUOTE).append(headers[i]).append(QUOTE);
-            if (i < headers.length - 1) {
-                content.append(COMMA);
-            }
-        }
-        content.append(NEW_LINE);
+    String strVal = value.toString().trim();
+    // 指定桁数でカット
+    if (strVal.length() > length) {
+        return strVal.substring(0, length);
     }
-
-    /**
-     * データ行を追加
-     * @param values データ値配列
-     */
-    public void addRow(String... values) {
-        for (int i = 0; i < values.length; i++) {
-            content.append(formatValue(values[i]));
-            if (i < values.length - 1) {
-                content.append(COMMA);
-            }
-        }
-        content.append(NEW_LINE);
-    }
-
-    /**
-     * CSVファイルを作成
-     */
-    public void createFile() throws SystemException {
-        try {
-            fileIo.writeFileString(content.toString());
-        } finally {
-            fileIo.closeFile();
-        }
-    }
-
-    /**
-     * ファイルパスを取得
-     */
-    public String getFilePath() {
-        return filePath;
-    }
-
-    /**
-     * 値をCSV形式にフォーマット
-     */
-    private String formatValue(String value) {
-        if (value == null) {
-            return QUOTE + QUOTE;
-        }
-        return QUOTE + value.replace(QUOTE, QUOTE + QUOTE) + QUOTE;
-    }
+    // 指定桁数に満たない場合は半角スペース埋め
+    return StringUtils.rightPad(strVal, length, ' ');
 }
-
-
-
-
-
-/**
- * 数値文字列変換ユーティリティ
- */
-private static class NumberUtil {
-    /**
-     * BigDecimalを指定桁数の文字列に変換
-     * @param value BigDecimal値
-     * @param length 桁数
-     * @param hasDecimal 小数部有無
-     * @return フォーマット済み文字列
-     */
-    public static String formatNumber(BigDecimal value, int length, boolean hasDecimal) {
-        if (value == null) {
-            return StringUtils.repeat("0", length);
-        }
-        
-        String strVal = value.toString();
-        if (!hasDecimal) {
-            strVal = strVal.split("\\.")[0];
-        }
-        
-        // マイナス符号を除去
-        strVal = strVal.replace("-", "");
-        
-        return StringUtils.leftPad(strVal, length, '0');
-    }
-    
-    /**
-     * 数値を文字列に変換（右寄せ、0埋め）
-     * @param value 数値
-     * @param length 桁数
-     * @return フォーマット済み文字列
-     */
-    public static String formatInteger(Integer value, int length) {
-        if (value == null) {
-            return StringUtils.repeat("0", length);
-        }
-        return StringUtils.leftPad(String.valueOf(value), length, '0');
-    }
-}
-
-
-
-
-
-
-
-/**
- * ファイルダウンロード処理
- * @param filePath ファイルパス
- * @throws SystemException システムエラー発生
- */
-private void handleFileDownload(String filePath) throws SystemException {
-    try {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            throw new SystemException("E-20055", "File not found: " + filePath);
-        }
-        
-        // ファイルを下り電文に設定
-        FileInputStream fis = new FileInputStream(file);
-        setDownloadFile(fis);
-        
-        // 一時ファイルを削除
-        FileUtil.deleteFile(file);
-        
-    } catch (FileNotFoundException e) {
-        throw new SystemException("E-20055", "File download error", e);
-    }
-}
-
-
-
