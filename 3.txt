@@ -135,6 +135,484 @@ ORDER BY
 如果您需要将它们分开执行，可以将每个WITH子句中的查询提取出来作为独立的SQL语句运行。
 
 
+基于您提供的所有图片内容，我将为您创建一个Spring Batch和MyBatis环境下的代码实现，用于处理流动化契约基本照合错误数据的抽出和处理。
+
+首先让我们创建整体结构：
+
+```java
+// 1. 配置类
+package com.example.reconciliation.config;
+
+import javax.sql.DataSource;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.jdbc.core.JdbcTemplate;
+
+import com.example.reconciliation.listener.JobCompletionNotificationListener;
+import com.example.reconciliation.mapper.ReconciliationMapper;
+import com.example.reconciliation.model.ReconciliationError;
+import com.example.reconciliation.processor.ReconciliationItemProcessor;
+import com.example.reconciliation.writer.ReconciliationItemWriter;
+
+@Configuration
+@EnableBatchProcessing
+public class BatchConfiguration {
+
+    @Autowired
+    public JobBuilderFactory jobBuilderFactory;
+
+    @Autowired
+    public StepBuilderFactory stepBuilderFactory;
+
+    @Autowired
+    private DataSource dataSource;
+    
+    @Autowired
+    private ReconciliationMapper reconciliationMapper;
+
+    @Bean
+    public Job reconciliationJob(JobCompletionNotificationListener listener, Step reconciliationStep) {
+        return jobBuilderFactory.get("reconciliationJob")
+                .incrementer(new RunIdIncrementer())
+                .listener(listener)
+                .flow(reconciliationStep)
+                .end()
+                .build();
+    }
+
+    @Bean
+    public Step reconciliationStep(ReconciliationItemWriter writer) {
+        return stepBuilderFactory.get("reconciliationStep")
+                .<ReconciliationError, ReconciliationError>chunk(10)
+                .reader(reconciliationReader())
+                .processor(reconciliationProcessor())
+                .writer(writer)
+                .build();
+    }
+    
+    @Bean
+    public JdbcCursorItemReader<ReconciliationError> reconciliationReader() {
+        // 创建一个游标读取器，执行WITH查询获取照合错误数据
+        JdbcCursorItemReader<ReconciliationError> reader = new JdbcCursorItemReader<>();
+        reader.setDataSource(dataSource);
+        reader.setSql(getReconciliationSql());
+        reader.setRowMapper((rs, rowNum) -> {
+            ReconciliationError error = new ReconciliationError();
+            error.setInvestorContractNo(rs.getString("投資家契約番号"));
+            error.setInvestorContractReleaseCount(rs.getInt("投資家契約再リース回数"));
+            error.setInvestorAccountingCategory(rs.getString("投資家会計処理区分"));
+            error.setInvestorContractHistoryNo(rs.getString("投資家契約履歴番号"));
+            error.setSourceUnrealizedInterestAmount(rs.getBigDecimal("A_未実現利息総金額"));
+            error.setTargetUnrealizedInterestAmount(rs.getBigDecimal("B_未実現利息総金額"));
+            return error;
+        });
+        return reader;
+    }
+
+    @Bean
+    public ReconciliationItemProcessor reconciliationProcessor() {
+        return new ReconciliationItemProcessor();
+    }
+
+    private String getReconciliationSql() {
+        return "WITH " +
+                "COMP_SOURCE AS (" +
+                "    SELECT " +
+                "        投資家契約番号, " +
+                "        投資家契約再リース回数, " +
+                "        投資家会計処理区分, " +
+                "        投資家契約履歴番号, " +
+                "        未実現利息総金額 " +
+                "    FROM " +
+                "        流動化契約基本 " +
+                "), " +
+                "COMP_TARGET AS (" +
+                "    SELECT " +
+                "        投資家契約番号, " +
+                "        投資家契約再リース回数, " +
+                "        投資家会計処理区分, " +
+                "        投資家契約履歴番号, " +
+                "        未実現利息ＯＭ付随総金額 + 未実現利息ＯＭ利息総金額 AS 未実現利息総金額 " +
+                "    FROM " +
+                "        流動化契約基本 " +
+                "), " +
+                "FULL_OUTER_JOIN_RESULT AS (" +
+                "    SELECT " +
+                "        NVL(s.投資家契約番号, t.投資家契約番号) AS 投資家契約番号, " +
+                "        NVL(s.投資家契約再リース回数, t.投資家契約再リース回数) AS 投資家契約再リース回数, " +
+                "        NVL(s.投資家会計処理区分, t.投資家会計処理区分) AS 投資家会計処理区分, " +
+                "        NVL(s.投資家契約履歴番号, t.投資家契約履歴番号) AS 投資家契約履歴番号, " +
+                "        s.未実現利息総金額 AS 元_未実現利息総金額, " +
+                "        t.未実現利息総金額 AS 先_未実現利息総金額 " +
+                "    FROM " +
+                "        COMP_SOURCE s " +
+                "        FULL OUTER JOIN COMP_TARGET t " +
+                "        ON s.投資家契約番号 = t.投資家契約番号 " +
+                "        AND s.投資家契約再リース回数 = t.投資家契約再リース回数 " +
+                "        AND s.投資家会計処理区分 = t.投資家会計処理区分 " +
+                "        AND s.投資家契約履歴番号 = t.投資家契約履歴番号 " +
+                "), " +
+                "DIFF_SOURCE AS (" +
+                "    SELECT * " +
+                "    FROM COMP_SOURCE " +
+                "    MINUS " +
+                "    SELECT * " +
+                "    FROM COMP_TARGET " +
+                "), " +
+                "DIFF_TARGET AS (" +
+                "    SELECT * " +
+                "    FROM COMP_TARGET " +
+                "    MINUS " +
+                "    SELECT * " +
+                "    FROM COMP_SOURCE " +
+                "), " +
+                "DIFF_UNION AS (" +
+                "    SELECT " +
+                "        投資家契約番号, " +
+                "        投資家契約再リース回数, " +
+                "        投資家会計処理区分, " +
+                "        投資家契約履歴番号 " +
+                "    FROM DIFF_SOURCE " +
+                "    UNION " +
+                "    SELECT " +
+                "        投資家契約番号, " +
+                "        投資家契約再リース回数, " +
+                "        投資家会計処理区分, " +
+                "        投資家契約履歴番号 " +
+                "    FROM DIFF_TARGET " +
+                ") " +
+                "SELECT " +
+                "    f.投資家契約番号, " +
+                "    f.投資家契約再リース回数, " +
+                "    f.投資家会計処理区分, " +
+                "    f.投資家契約履歴番号, " +
+                "    f.元_未実現利息総金額 AS A_未実現利息総金額, " +
+                "    f.先_未実現利息総金額 AS B_未実現利息総金額 " +
+                "FROM " +
+                "    FULL_OUTER_JOIN_RESULT f " +
+                "    INNER JOIN DIFF_UNION d " +
+                "    ON f.投資家契約番号 = d.投資家契約番号 " +
+                "    AND f.投資家契約再リース回数 = d.投資家契約再リース回数 " +
+                "    AND f.投資家会計処理区分 = d.投資家会計処理区分 " +
+                "    AND f.投資家契約履歴番号 = d.投資家契約履歴番号 " +
+                "ORDER BY " +
+                "    f.投資家契約番号 ASC, " +
+                "    f.投資家契約再リース回数 ASC, " +
+                "    f.投資家会計処理区分 ASC, " +
+                "    f.投資家契約履歴番号 ASC";
+    }
+}
+```
+
+接下来我们创建模型类、Mapper、处理器和Writer：
+
+```java
+// 2. 模型类
+package com.example.reconciliation.model;
+
+import java.math.BigDecimal;
+
+public class ReconciliationError {
+    private String investorContractNo;           // 投資家契約番号
+    private int investorContractReleaseCount;    // 投資家契約再リース回数
+    private String investorAccountingCategory;   // 投資家会計処理区分
+    private String investorContractHistoryNo;    // 投資家契約履歴番号
+    private BigDecimal sourceUnrealizedInterestAmount;  // 元_未実現利息総金額
+    private BigDecimal targetUnrealizedInterestAmount;  // 先_未実現利息総金額
+    private String reconciliationErrorId;        // 照合エラーID
+
+    // Getters and setters
+    public String getInvestorContractNo() {
+        return investorContractNo;
+    }
+
+    public void setInvestorContractNo(String investorContractNo) {
+        this.investorContractNo = investorContractNo;
+    }
+
+    public int getInvestorContractReleaseCount() {
+        return investorContractReleaseCount;
+    }
+
+    public void setInvestorContractReleaseCount(int investorContractReleaseCount) {
+        this.investorContractReleaseCount = investorContractReleaseCount;
+    }
+
+    public String getInvestorAccountingCategory() {
+        return investorAccountingCategory;
+    }
+
+    public void setInvestorAccountingCategory(String investorAccountingCategory) {
+        this.investorAccountingCategory = investorAccountingCategory;
+    }
+
+    public String getInvestorContractHistoryNo() {
+        return investorContractHistoryNo;
+    }
+
+    public void setInvestorContractHistoryNo(String investorContractHistoryNo) {
+        this.investorContractHistoryNo = investorContractHistoryNo;
+    }
+
+    public BigDecimal getSourceUnrealizedInterestAmount() {
+        return sourceUnrealizedInterestAmount;
+    }
+
+    public void setSourceUnrealizedInterestAmount(BigDecimal sourceUnrealizedInterestAmount) {
+        this.sourceUnrealizedInterestAmount = sourceUnrealizedInterestAmount;
+    }
+
+    public BigDecimal getTargetUnrealizedInterestAmount() {
+        return targetUnrealizedInterestAmount;
+    }
+
+    public void setTargetUnrealizedInterestAmount(BigDecimal targetUnrealizedInterestAmount) {
+        this.targetUnrealizedInterestAmount = targetUnrealizedInterestAmount;
+    }
+
+    public String getReconciliationErrorId() {
+        return reconciliationErrorId;
+    }
+
+    public void setReconciliationErrorId(String reconciliationErrorId) {
+        this.reconciliationErrorId = reconciliationErrorId;
+    }
+}
+```
+
+```java
+// 3. MyBatis Mapper接口
+package com.example.reconciliation.mapper;
+
+import java.util.List;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import com.example.reconciliation.model.ReconciliationError;
+import com.example.reconciliation.model.ReconciliationItemCondition;
+
+@Mapper
+public interface ReconciliationMapper {
+
+    @Select("SELECT item_code, item_name FROM リコンサイル比較項目管理テーブル")
+    List<ReconciliationItemCondition> getReconciliationItemConditions();
+    
+    @Insert("INSERT INTO 照合エラーテーブル " +
+            "(照合エラーID, プログラムID, 担当者コード, 投資家契約番号, 投資家契約再リース回数, " +
+            "投資家会計処理区分, 投資家契約履歴番号, 元_未実現利息総金額, 先_未実現利息総金額) " +
+            "VALUES (#{errorId}, #{programId}, #{operatorCode}, #{error.investorContractNo}, " +
+            "#{error.investorContractReleaseCount}, #{error.investorAccountingCategory}, " +
+            "#{error.investorContractHistoryNo}, #{error.sourceUnrealizedInterestAmount}, " +
+            "#{error.targetUnrealizedInterestAmount})")
+    void insertReconciliationError(@Param("errorId") String errorId, 
+                                 @Param("programId") String programId,
+                                 @Param("operatorCode") String operatorCode,
+                                 @Param("error") ReconciliationError error);
+    
+    @Select("SELECT COUNT(*) FROM 照合エラーテーブル WHERE プログラムID = #{programId}")
+    int countReconciliationErrorsByProgramId(@Param("programId") String programId);
+}
+```
+
+```java
+// 4. 处理器 - 为每条记录生成照合エラーID
+package com.example.reconciliation.processor;
+
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.beans.factory.annotation.Value;
+
+import com.example.reconciliation.model.ReconciliationError;
+
+import java.util.UUID;
+
+public class ReconciliationItemProcessor implements ItemProcessor<ReconciliationError, ReconciliationError> {
+
+    @Override
+    public ReconciliationError process(ReconciliationError error) throws Exception {
+        // 生成唯一的照合エラーID
+        error.setReconciliationErrorId("ERR_" + UUID.randomUUID().toString().substring(0, 8));
+        return error;
+    }
+}
+```
+
+```java
+// 5. Writer - 将处理后的数据写入数据库
+package com.example.reconciliation.writer;
+
+import java.util.List;
+
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.example.reconciliation.mapper.ReconciliationMapper;
+import com.example.reconciliation.model.ReconciliationError;
+
+@Component
+public class ReconciliationItemWriter implements ItemWriter<ReconciliationError> {
+
+    @Autowired
+    private ReconciliationMapper reconciliationMapper;
+    
+    @Value("${reconciliation.program.id}")
+    private String programId;
+    
+    @Value("${reconciliation.operator.code:''}")
+    private String operatorCode;
+
+    @Override
+    public void write(List<? extends ReconciliationError> items) throws Exception {
+        for (ReconciliationError error : items) {
+            reconciliationMapper.insertReconciliationError(
+                error.getReconciliationErrorId(),
+                programId,
+                operatorCode,
+                error
+            );
+        }
+    }
+}
+```
+
+```java
+// 6. 作业完成通知监听器
+package com.example.reconciliation.listener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.listener.JobExecutionListenerSupport;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.stereotype.Component;
+
+import com.example.reconciliation.mapper.ReconciliationMapper;
+
+@Component
+public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
+
+    private static final Logger log = LoggerFactory.getLogger(JobCompletionNotificationListener.class);
+    
+    @Autowired
+    private ReconciliationMapper reconciliationMapper;
+    
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+    
+    @Value("${reconciliation.program.id}")
+    private String programId;
+
+    @Override
+    public void afterJob(JobExecution jobExecution) {
+        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+            log.info("!!! JOB FINISHED! Time to verify the results");
+            
+            int errorCount = reconciliationMapper.countReconciliationErrorsByProgramId(programId);
+            log.info("Found {} reconciliation errors", errorCount);
+        }
+    }
+}
+```
+
+最后，我们需要添加配置文件：
+
+```yaml
+# application.yml
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@localhost:1521:orcl
+    username: username
+    password: password
+    driver-class-name: oracle.jdbc.OracleDriver
+  batch:
+    job:
+      enabled: false  # 禁用自动执行作业，通过API触发
+      
+reconciliation:
+  program:
+    id: ${JOB_ID:流動化契約基本照合}  # 从环境变量获取，默认值为"流動化契約基本照合"
+  operator:
+    code: ""  # 默认为空
+```
+
+```java
+// 7. 主应用类
+package com.example.reconciliation;
+
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.JobParameters;
+import org.springframework.batch.core.JobParametersBuilder;
+import org.springframework.batch.core.launch.JobLauncher;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.boot.SpringApplication;
+import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.Bean;
+
+@SpringBootApplication
+public class ReconciliationApplication {
+
+    @Autowired
+    private JobLauncher jobLauncher;
+
+    @Autowired
+    private Job reconciliationJob;
+
+    public static void main(String[] args) {
+        SpringApplication.run(ReconciliationApplication.class, args);
+    }
+
+    @Bean
+    public CommandLineRunner run() {
+        return args -> {
+            JobParameters jobParameters = new JobParametersBuilder()
+                    .addLong("time", System.currentTimeMillis())
+                    .toJobParameters();
+            
+            jobLauncher.run(reconciliationJob, jobParameters);
+        };
+    }
+}
+```
+
+```xml
+<!-- MyBatis映射XML配置 -->
+<!-- src/main/resources/mybatis/ReconciliationMapper.xml -->
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.example.reconciliation.mapper.ReconciliationMapper">
+    <!-- 可添加更复杂的SQL查询 -->
+</mapper>
+```
+
+这套代码实现了图片中描述的流程：
+
+1. 配置了Spring Batch作业，使用WITH子句SQL查询比较流动化契约基本表中的数据
+2. 使用JdbcCursorItemReader读取照合错误数据 
+3. 通过ItemProcessor为每条错误数据生成唯一ID
+4. 通过MyBatis Mapper将照合错误数据写入照合错误表
+5. 在作业完成后输出处理的错误数量
+
+代码结构符合标准的Spring Batch应用模式，并结合了MyBatis进行数据库访问，同时处理了图片中提到的项目设置和处理逻辑。
+
+
+
+
+
+
 
 
 
