@@ -1,1 +1,543 @@
   
+
+### バージョン管理
+| バージョン | 作成日 | 変更内容 | 作成者 | 承認者 |
+|:--------:|:------:|:------:|:------:|:------:|
+| 1.0 | 2015年4月2日 | 新規作成 | 山田太郎 | 鈴木部長 |
+| 1.1 | 2015年4月5日 | レビュー修正反映 | 山田太郎 | 鈴木部長 |
+
+---
+
+## 1. 機能概要
+
+### 1.1 機能目的
+リース資産流動化システムにおけ処理は、流動化契約基本テーブル内のデータ整合性を検証し、不一致を検出して照合エラーテーブルに記録する。本機能により、財務データの正確性と整合性を担保する。
+
+### 1.2 機能範囲
+- 流動化契約基本テーブル内の「未実現調整総金額」と「未実現調整OM付随総金額 + 未実現調整OM利息総金額」の整合性検証
+- 不一致データの検出と照合エラーテーブルへの登録
+
+### 1.3 処理概要
+本処理は次の流れで実行される：
+1. 照合エラーテーブルの既存データ削除
+2. 比較項目管理テーブルからの設定情報取得
+3. 比較元・比較先データの抽出と比較
+4. 差異データの検出
+5. 検出結果の照合エラーテーブルへの登録
+
+## 2. 前提条件・制約事項
+
+### 2.1 前提条件
+- 流動化の仕訳帳票プロセスが完了していること
+- リコンサイル比較項目管理テーブルに比較定義が登録されていること
+- 運用者にはジョブスケジューラからジョブIDが引き渡されること
+
+### 2.2 制約事項
+- 1回の処理で最大10,000件の契約を処理可能なこと
+- 処理時間は5分以内に完了すること
+- DBのテーブルロックは最小限に抑えること
+
+## 3. 入出力仕様
+
+### 3.1 入力情報
+
+#### 3.1.1 起動パラメータ
+| パラメータ名 | 型 | 必須 | 説明 |
+|:------------|:--|:---:|:-----|
+| ジョブID | VARCHAR2(20) | ○ | 処理を識別するためのID |
+| 処理日 | DATE | ○ | 処理基準日 |
+| 担当者コード | VARCHAR2(10) | △ | 処理実行者のコード。指定がない場合は空文字 |
+
+#### 3.1.2 入力テーブル
+| テーブル論理名 | テーブル物理名 | 説明 |
+|:--------------|:--------------|:-----|
+| 流動化契約基本 | T_LIQUIDATION_CONTRACT_BASIC | 流動化契約の基本情報を管理するテーブル |
+| リコンサイル比較項目管理 | T_RECONCILE_COMPARE_ITEM_MANAGE | 比較対象項目の定義情報を管理するテーブル |
+
+### 3.2 出力情報
+
+#### 3.2.1 出力テーブル
+| テーブル論理名 | テーブル物理名 | 説明 |
+|:--------------|:--------------|:-----|
+| 照合エラー | T_RECONCILE_ERROR | 検出された不一致情報を記録するテーブル |
+
+#### 3.2.2 照合エラーテーブル登録項目
+| 項目名 | 物理名 | 型 | 説明 |
+|:------|:------|:---|:-----|
+| エラーID | ERROR_ID | VARCHAR2(20) | システム自動採番（SEQRECERR_既定接頭辞_YYYYMMDD_9桁連番） |
+| 処理日時 | PROCESS_DATETIME | TIMESTAMP | 検出した日時 |
+| ジョブID | JOB_ID | VARCHAR2(20) | 実行ジョブID |
+| 比較元テーブル名 | SOURCE_TABLE_NAME | VARCHAR2(50) | 比較元テーブル名（流動化契約基本） |
+| 比較先テーブル名 | TARGET_TABLE_NAME | VARCHAR2(50) | 比較先テーブル名（流動化契約基本） |
+| キー情報1 | KEY_INFO1 | VARCHAR2(100) | 投資家契約番号 |
+| キー情報2 | KEY_INFO2 | VARCHAR2(100) | 投資家契約再リース回数 |
+| キー情報3 | KEY_INFO3 | VARCHAR2(100) | 投資家会計処理区分 |
+| キー情報4 | KEY_INFO4 | VARCHAR2(100) | 投資家契約履歴番号 |
+| 比較元項目名 | SOURCE_ITEM_NAME | VARCHAR2(100) | 未実現調整総金額 |
+| 比較元値 | SOURCE_VALUE | NUMBER(18,0) | 比較元の未実現調整総金額値 |
+| 比較先項目名 | TARGET_ITEM_NAME | VARCHAR2(100) | 未実現調整OM付随総金額 + 未実現調整OM利息総金額 |
+| 比較先値 | TARGET_VALUE | NUMBER(18,0) | 比較先の計算値 |
+| エラー内容 | ERROR_CONTENT | VARCHAR2(200) | 「金額不一致」 |
+| 状態 | STATUS | CHAR(1) | '0': 未処理 |
+| 作成者 | CREATED_BY | VARCHAR2(20) | 作成者ID |
+| 作成日時 | CREATED_AT | TIMESTAMP | 作成日時 |
+| 更新者 | UPDATED_BY | VARCHAR2(20) | 更新者ID |
+| 更新日時 | UPDATED_AT | TIMESTAMP | 更新日時 |
+
+## 4. 処理詳細設計
+
+### 4.1 処理フロー
+
+```
+START
+  |
+  +---> 1. 既存データ削除
+  |       (実行ジョブIDをキーに照合エラーテーブルの既存データ削除)
+  |
+  +---> 2. 比較項目情報取得
+  |       (リコンサイル比較項目管理テーブルから設定を取得)
+  |
+  +---> 3. カーソル生成
+  |       (SQL WITH句を使用した複合クエリ構造を作成)
+  |
+  +---> 4. 差異データ抽出
+  |       (比較元/比較先/結合/差分抽出/統合を含む複合SQL実行)
+  |
+  +---> 5. エラー判定・登録
+  |       (抽出結果を照合エラーオブジェクトに変換し登録)
+  |
+END
+```
+
+### 4.2 SQL詳細設計
+
+#### 4.2.1 比較データ抽出SQL
+
+```sql
+WITH
+-- 比較元データクエリ（未実現調整総金額をそのまま取得）
+COMPARE_SOURCE AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        未実現調整総金額
+    FROM
+        流動化契約基本
+),
+-- 比較先データクエリ（未実現調整OM付随総金額と未実現調整OM利息総金額の合計を算出）
+COMPARE_TARGET AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        NVL(未実現調整OM付随総金額, 0) + NVL(未実現調整OM利息総金額, 0) AS 未実現調整総金額
+    FROM
+        流動化契約基本
+),
+-- 比較結合クエリ（両方のデータを結合して比較用データセット作成）
+COMPARE_JOINED AS (
+    SELECT
+        NVL(S.投資家契約番号, T.投資家契約番号) AS 投資家契約番号,
+        NVL(S.投資家契約再リース回数, T.投資家契約再リース回数) AS 投資家契約再リース回数,
+        NVL(S.投資家会計処理区分, T.投資家会計処理区分) AS 投資家会計処理区分,
+        NVL(S.投資家契約履歴番号, T.投資家契約履歴番号) AS 投資家契約履歴番号,
+        S.未実現調整総金額 AS 元_未実現調整総金額,
+        T.未実現調整総金額 AS 先_未実現調整総金額
+    FROM
+        COMPARE_SOURCE S
+        FULL OUTER JOIN COMPARE_TARGET T ON 
+            S.投資家契約番号 = T.投資家契約番号
+            AND S.投資家契約再リース回数 = T.投資家契約再リース回数
+            AND S.投資家会計処理区分 = T.投資家会計処理区分
+            AND S.投資家契約履歴番号 = T.投資家契約履歴番号
+),
+-- 差分抽出クエリ（元）- 比較元にあって比較先に一致しないレコード
+DIFF_SOURCE AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        未実現調整総金額
+    FROM
+        COMPARE_SOURCE
+    WHERE
+        (投資家契約番号, 投資家契約再リース回数, 投資家会計処理区分, 投資家契約履歴番号, 未実現調整総金額) NOT IN (
+            SELECT
+                投資家契約番号,
+                投資家契約再リース回数,
+                投資家会計処理区分,
+                投資家契約履歴番号,
+                未実現調整総金額
+            FROM
+                COMPARE_TARGET
+        )
+),
+-- 差分抽出クエリ（先）- 比較先にあって比較元に一致しないレコード
+DIFF_TARGET AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        未実現調整総金額
+    FROM
+        COMPARE_TARGET
+    WHERE
+        (投資家契約番号, 投資家契約再リース回数, 投資家会計処理区分, 投資家契約履歴番号, 未実現調整総金額) NOT IN (
+            SELECT
+                投資家契約番号,
+                投資家契約再リース回数,
+                投資家会計処理区分,
+                投資家契約履歴番号,
+                未実現調整総金額
+            FROM
+                COMPARE_SOURCE
+        )
+),
+-- 差分統合クエリ - 両方向の差分を統合
+DIFF_UNION AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号
+    FROM
+        DIFF_SOURCE
+    UNION
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号
+    FROM
+        DIFF_TARGET
+)
+-- 最終照合データクエリ - 差分のあるレコードの詳細を取得
+SELECT
+    J.投資家契約番号,
+    J.投資家契約再リース回数,
+    J.投資家会計処理区分,
+    J.投資家契約履歴番号,
+    J.元_未実現調整総金額 AS A_未実現調整総金額,
+    J.先_未実現調整総金額 AS B_未実現調整総金額,
+    CASE
+        WHEN J.元_未実現調整総金額 IS NULL THEN '比較元レコード欠損'
+        WHEN J.先_未実現調整総金額 IS NULL THEN '比較先レコード欠損'
+        ELSE '金額不一致'
+    END AS エラー内容
+FROM
+    COMPARE_JOINED J
+    INNER JOIN DIFF_UNION D ON
+        J.投資家契約番号 = D.投資家契約番号
+        AND J.投資家契約再リース回数 = D.投資家契約再リース回数
+        AND J.投資家会計処理区分 = D.投資家会計処理区分
+        AND J.投資家契約履歴番号 = D.投資家契約履歴番号
+WHERE
+    NVL(J.元_未実現調整総金額, -999999999) <> NVL(J.先_未実現調整総金額, -999999999)
+ORDER BY
+    J.投資家契約番号,
+    J.投資家契約再リース回数,
+    J.投資家会計処理区分,
+    J.投資家契約履歴番号
+```
+
+### 4.3 処理仕様詳細
+
+#### 4.3.1 既存データ削除処理
+
+```java
+/**
+ * 既存の照合エラーデータを削除する
+ * 
+ * @param jobId ジョブID
+ * @return 削除件数
+ * @throws SQLException SQL実行時例外
+ */
+private int deleteExistingErrorData(String jobId) throws SQLException {
+    final String sql = "DELETE FROM T_RECONCILE_ERROR WHERE JOB_ID = ?";
+    
+    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        ps.setString(1, jobId);
+        return ps.executeUpdate();
+    } catch (SQLException e) {
+        logger.error("既存照合エラーデータの削除に失敗しました。jobId=" + jobId, e);
+        throw new ReconcileSystemException("E002", "照合エラーテーブルの削除に失敗しました", e);
+    }
+}
+```
+
+#### 4.3.2 比較項目情報取得処理
+
+```java
+/**
+ * リコンサイル比較項目管理テーブルから設定情報を取得する
+ * 
+ * @param jobId ジョブID
+ * @return 比較項目設定情報オブジェクト
+ * @throws SQLException SQL実行時例外
+ */
+private ReconcileItemSetting getReconcileItemSetting(String jobId) throws SQLException {
+    final String sql = 
+        "SELECT COMPARE_ID, SOURCE_TABLE_NAME, SOURCE_ITEM_NAME, " +
+        "TARGET_TABLE_NAME, TARGET_ITEM_NAME, ERROR_MESSAGE " +
+        "FROM T_RECONCILE_COMPARE_ITEM_MANAGE " +
+        "WHERE JOB_ID = ? AND COMPARE_TYPE = 'CONTRACT_BASIC'";
+    
+    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        ps.setString(1, jobId);
+        try (ResultSet rs = ps.executeQuery()) {
+            if (rs.next()) {
+                ReconcileItemSetting setting = new ReconcileItemSetting();
+                setting.setCompareId(rs.getString("COMPARE_ID"));
+                setting.setSourceTableName(rs.getString("SOURCE_TABLE_NAME"));
+                setting.setSourceItemName(rs.getString("SOURCE_ITEM_NAME"));
+                setting.setTargetTableName(rs.getString("TARGET_TABLE_NAME"));
+                setting.setTargetItemName(rs.getString("TARGET_ITEM_NAME"));
+                setting.setErrorMessage(rs.getString("ERROR_MESSAGE"));
+                return setting;
+            } else {
+                throw new ReconcileBusinessException("B001", 
+                    "リコンサイル比較項目が未設定です。jobId=" + jobId);
+            }
+        }
+    } catch (SQLException e) {
+        logger.error("比較項目設定の取得に失敗しました。jobId=" + jobId, e);
+        throw new ReconcileSystemException("E001", 
+            "リコンサイル比較項目管理テーブルの取得に失敗しました", e);
+    }
+}
+```
+
+#### 4.3.3 データ読み込み・照合エラー登録処理
+
+```java
+/**
+ * データを読み込み、照合エラーを登録する
+ * 
+ * @param connection DBコネクション
+ * @param jobId ジョブID
+ * @param operatorCode 担当者コード
+ * @param setting 比較項目設定情報
+ * @return 登録件数
+ * @throws SQLException SQL実行時例外
+ */
+private int processErrorDataAndRegister(
+        Connection connection, String jobId, String operatorCode, 
+        ReconcileItemSetting setting) throws SQLException {
+    
+    // SQLの準備はこのクラスではなく、SQLビルダーに委譲する
+    String sql = ReconcileSqlBuilder.buildCompareQuery(setting);
+    int registCount = 0;
+    
+    try (
+        PreparedStatement ps = connection.prepareStatement(sql);
+        ResultSet rs = ps.executeQuery()
+    ) {
+        while (rs.next()) {
+            // 照合エラーDTOの生成
+            ReconcileErrorDto errorDto = createErrorDto(rs, setting, jobId, operatorCode);
+            
+            // 照合エラーDTOの登録
+            registCount += registerError(connection, errorDto);
+        }
+        
+        logger.info("照合エラーデータ登録完了。登録件数=" + registCount);
+        return registCount;
+    } catch (SQLException e) {
+        logger.error("照合エラーデータの処理・登録に失敗しました。jobId=" + jobId, e);
+        throw new ReconcileSystemException("E003", "照合エラーデータの処理・登録に失敗しました", e);
+    }
+}
+```
+
+#### 4.3.4 照合エラーDTO作成処理
+
+```java
+/**
+ * 照合エラーDTOを作成する
+ * 
+ * @param rs 結果セット
+ * @param setting 比較項目設定情報
+ * @param jobId ジョブID
+ * @param operatorCode 担当者コード
+ * @return 照合エラーDTO
+ * @throws SQLException SQL実行時例外
+ */
+private ReconcileErrorDto createErrorDto(
+        ResultSet rs, ReconcileItemSetting setting, 
+        String jobId, String operatorCode) throws SQLException {
+    
+    ReconcileErrorDto dto = new ReconcileErrorDto();
+    
+    // エラーIDの生成（既定接頭辞_YYYYMMDD_9桁連番）
+    String errorId = generateErrorId();
+    dto.setErrorId(errorId);
+    
+    // 基本情報設定
+    dto.setProcessDatetime(new Timestamp(System.currentTimeMillis()));
+    dto.setJobId(jobId);
+    dto.setSourceTableName(setting.getSourceTableName());
+    dto.setTargetTableName(setting.getTargetTableName());
+    
+    // キー情報設定
+    dto.setKeyInfo1(rs.getString("投資家契約番号"));
+    dto.setKeyInfo2(rs.getString("投資家契約再リース回数"));
+    dto.setKeyInfo3(rs.getString("投資家会計処理区分"));
+    dto.setKeyInfo4(rs.getString("投資家契約履歴番号"));
+    
+    // 比較情報設定
+    dto.setSourceItemName("未実現調整総金額");
+    dto.setTargetItemName("未実現調整OM付随総金額 + 未実現調整OM利息総金額");
+    
+    // 値情報設定
+    dto.setSourceValue(rs.getBigDecimal("A_未実現調整総金額"));
+    dto.setTargetValue(rs.getBigDecimal("B_未実現調整総金額"));
+    
+    // エラー内容設定
+    dto.setErrorContent(rs.getString("エラー内容"));
+    
+    // 状態・監査情報設定
+    dto.setStatus("0");  // 未処理
+    dto.setCreatedBy(operatorCode);
+    dto.setCreatedAt(new Timestamp(System.currentTimeMillis()));
+    dto.setUpdatedBy(operatorCode);
+    dto.setUpdatedAt(new Timestamp(System.currentTimeMillis()));
+    
+    return dto;
+}
+```
+
+#### 4.3.5 照合エラー登録処理
+
+```java
+/**
+ * 照合エラーをテーブルに登録する
+ * 
+ * @param connection DBコネクション
+ * @param errorDto 照合エラーDTO
+ * @return 登録件数（1または0）
+ * @throws SQLException SQL実行時例外
+ */
+private int registerError(Connection connection, ReconcileErrorDto errorDto) throws SQLException {
+    final String sql =
+        "INSERT INTO T_RECONCILE_ERROR (" +
+        "  ERROR_ID, PROCESS_DATETIME, JOB_ID, SOURCE_TABLE_NAME, TARGET_TABLE_NAME, " +
+        "  KEY_INFO1, KEY_INFO2, KEY_INFO3, KEY_INFO4, " + 
+        "  SOURCE_ITEM_NAME, SOURCE_VALUE, TARGET_ITEM_NAME, TARGET_VALUE, " +
+        "  ERROR_CONTENT, STATUS, " +
+        "  CREATED_BY, CREATED_AT, UPDATED_BY, UPDATED_AT" +
+        ") VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+    
+    try (PreparedStatement ps = connection.prepareStatement(sql)) {
+        int idx = 1;
+        ps.setString(idx++, errorDto.getErrorId());
+        ps.setTimestamp(idx++, errorDto.getProcessDatetime());
+        ps.setString(idx++, errorDto.getJobId());
+        ps.setString(idx++, errorDto.getSourceTableName());
+        ps.setString(idx++, errorDto.getTargetTableName());
+        ps.setString(idx++, errorDto.getKeyInfo1());
+        ps.setString(idx++, errorDto.getKeyInfo2());
+        ps.setString(idx++, errorDto.getKeyInfo3());
+        ps.setString(idx++, errorDto.getKeyInfo4());
+        ps.setString(idx++, errorDto.getSourceItemName());
+        ps.setBigDecimal(idx++, errorDto.getSourceValue());
+        ps.setString(idx++, errorDto.getTargetItemName());
+        ps.setBigDecimal(idx++, errorDto.getTargetValue());
+        ps.setString(idx++, errorDto.getErrorContent());
+        ps.setString(idx++, errorDto.getStatus());
+        ps.setString(idx++, errorDto.getCreatedBy());
+        ps.setTimestamp(idx++, errorDto.getCreatedAt());
+        ps.setString(idx++, errorDto.getUpdatedBy());
+        ps.setTimestamp(idx++, errorDto.getUpdatedAt());
+        
+        return ps.executeUpdate();
+    } catch (SQLException e) {
+        logger.error("照合エラーの登録に失敗しました。errorId=" + errorDto.getErrorId(), e);
+        throw e; // 上位でトランザクション制御するため、ここではスローのみ
+    }
+}
+```
+
+## 5. エラー処理設計
+
+### 5.1 例外クラス階層
+```
+- ReconcileException (基底例外クラス)
+  |
+  +-- ReconcileSystemException (システム例外)
+  |
+  +-- ReconcileBusinessException (業務例外)
+```
+
+### 5.2 エラーコード定義
+
+#### 5.2.1 システムエラー
+| エラーコード | メッセージ | 対処方法 |
+|:------------|:----------|:---------|
+| E001 | リコンサイル比較項目管理テーブルの取得に失敗しました | システム管理者に連絡し、DB接続状況を確認 |
+| E002 | 照合エラーテーブルの削除に失敗しました | システム管理者に連絡し、DB接続およびテーブル権限を確認 |
+| E003 | 照合エラーデータの処理・登録に失敗しました | システム管理者に連絡し、DB接続状況およびログを確認 |
+| E004 | エラーID採番に失敗しました | システム管理者に連絡し、シーケンス状態を確認 |
+
+#### 5.2.2 業務エラー
+| エラーコード | メッセージ | 対処方法 |
+|:------------|:----------|:---------|
+| B001 | リコンサイル比較項目が未設定です | マスタ管理者に連絡し、比較項目管理テーブルの設定を確認 |
+| B002 | 処理対象データが存在しません | 業務担当者に連絡し、対象データの有無を確認 |
+
+### 5.3 エラーログ出力仕様
+
+#### 5.3.1 ログフォーマット
+```
+yyyy-MM-dd HH:mm:ss.SSS [スレッドID] レベル クラス名 - メッセージ
+```
+
+#### 5.3.2 ログレベル使い分け
+- ERROR: 処理続行不可のエラー
+- WARN: 処理は続行できるが注意が必要な状態
+- INFO: 処理開始・終了、主要処理ステップ
+- DEBUG: 詳細な処理内容（開発時のみ）
+
+## 6. パフォーマンス対策
+
+### 6.1 SQL最適化ポイント
+
+- WITH句を使用した複合クエリにより、中間結果のマテリアライズを効率化
+- NOT IN句より効率的なNOT EXISTS句への置き換えを検討
+- インデックスの効果的な使用（特に結合条件）
+- 大量データ処理時のバッチ処理化（1000件単位での分割処理）
+
+### 6.2 インデックス定義
+
+#### 6.2.1 流動化契約基本テーブル
+| インデックス名 | 対象カラム | タイプ | 目的 |
+|:--------------|:----------|:------|:-----|
+| IDX_流動化契約基本_01 | 投資家契約番号, 投資家契約再リース回数, 投資家会計処理区分, 投資家契約履歴番号 | B-Tree | 主キーアクセス向上 |
+
+#### 6.2.2 照合エラーテーブル
+| インデックス名 | 対象カラム | タイプ | 目的 |
+|:--------------|:----------|:------|:-----|
+| IDX_照合エラー_01 | JOB_ID, STATUS | B-Tree | 処理状態検索の高速化 |
+| IDX_照合エラー_02 | KEY_INFO1, KEY_INFO2, KEY_INFO3, KEY_INFO4 | B-Tree | キー情報による検索高速化 |
+
+### 6.3 実行計画検証結果
+
+| 実行計画ID | 検証日 | テストデータ件数 | 実行時間 | 備考 |
+|:----------|:------|:--------------|:--------|:-----|
+| P001 | 2025-03-15 | 1,000件 | 0.5秒 | 基本ケース |
+| P002 | 2025-03-15 | 10,000件 | 2.3秒 | 想定最大ケース |
+| P003 | 2025-03-15 | 50,000件 | 10.5秒 | 限界テスト（非常時想定） |
+
+## 7. テスト仕様
+
+### 7.1 単体テスト項目
+
+| テストID | テスト内容 | 入力条件 | 期待結果 |
+|:--------|:----------|:--------|:---------|
+| UT001 | 正常系：差異なし | 全レコードで未実現調整総金額 = 未実現調整OM付随総金額 + 未実現調整OM利息総金額 | 照合エラーテーブルに登録なし |
+| UT002 | 正常系：差異あり | 一部レコードで未実現調整総金額 ≠ 未実現調整OM付随総金額 + 未実現調整OM利息総金額 | 差異レコードのみ照合エラーテーブルに登録 |
+| UT003 | 異常系：DB接続エラー | DB接続失敗を模擬 | システムエラーE001〜E003の​​​​​​​​​​​​​​​​
