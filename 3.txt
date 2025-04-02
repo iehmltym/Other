@@ -612,7 +612,584 @@ public class ReconciliationApplication {
 
 
 
+# 流動化契約基本照合エラーデータ抽出機能詳細設計書
 
+## 1. 文書情報
+
+| 項目           | 内容                                      |
+|----------------|-------------------------------------------|
+| システム名     | 流動化契約管理システム                    |
+| サブシステム名 | リコンサイル機能                          |
+| 機能名         | 流動化契約基本照合エラーデータ抽出機能    |
+| 作成者         | -                                         |
+| 作成日         | 2025年4月3日                              |
+| バージョン     | 1.0                                       |
+
+## 2. 改訂履歴
+
+| 日付       | バージョン | 改訂内容 | 改訂者 |
+|------------|------------|----------|--------|
+| 2025/04/03 | 1.0        | 新規作成 | -      |
+
+## 3. 機能概要
+
+本機能は、流動化契約基本テーブルにおける投資家契約の未実現利息総金額に関する照合エラーを抽出し、照合エラーテーブルに登録する機能である。
+
+処理は以下の流れで行う：
+1. 流動化契約基本テーブルから比較元データと比較先データを抽出
+2. 両データの差異を検出するために完全外部結合（FULL OUTER JOIN）を実行
+3. 差分抽出クエリで相違するデータを特定
+4. 照合エラーデータを生成し、照合エラーテーブルに登録
+
+## 4. 前提条件・制約条件
+
+### 4.1 前提条件
+- Spring BatchおよびMyBatis環境で実装する
+- 照合エラーテーブルが存在していること
+- リコンサイル比較項目管理テーブルが存在していること
+- 流動化契約基本テーブルが適切なデータで構築されていること
+
+### 4.2 制約条件
+- バッチ処理として実装すること
+- パフォーマンスを考慮し、大量データ処理に対応すること
+- 実行するジョブIDをキーに、照合エラーテーブルの既存データを削除すること
+- データベースはOracleを使用すること
+
+## 5. 機能構成
+
+### 5.1 機能一覧
+
+| No. | 機能名                   | 概要                                                   |
+|-----|--------------------------|--------------------------------------------------------|
+| 1   | 照合エラーデータ抽出機能 | 流動化契約基本テーブルから照合エラーデータを抽出する   |
+| 2   | 照合エラーデータ登録機能 | 抽出した照合エラーデータを照合エラーテーブルに登録する |
+
+### 5.2 画面一覧
+
+本機能はバッチ処理のため、画面は存在しない。
+
+### 5.3 帳票一覧
+
+本機能では帳票出力を行わない。
+
+## 6. 処理詳細
+
+### 6.1 テーブル内比較
+
+#### 6.1.1 流動化契約基本照合エラーデータ抽出
+
+##### a. 実行するジョブIDをキーに、照合エラーテーブルの既存データを削除する
+
+```java
+// ジョブIDをキーに照合エラーテーブルの既存データを削除するSQL
+@Delete("DELETE FROM 照合エラーテーブル WHERE プログラムID = #{programId}")
+int deleteReconciliationErrorsByProgramId(@Param("programId") String programId);
+```
+
+##### b. 実行するジョブIDをキーに、リコンサイル比較項目管理テーブルを取得する
+
+```java
+// リコンサイル比較項目管理テーブルを取得するSQL
+@Select("SELECT item_code, item_name FROM リコンサイル比較項目管理テーブル WHERE program_id = #{programId}")
+List<ReconciliationItemCondition> getReconciliationItemConditions(@Param("programId") String programId);
+```
+
+##### c. 以下の項目を設定する（後続のDB登録時に使用）
+- プログラムID = 本処理のプロセスID
+- 担当者コード = ""（空文字）
+
+##### d. 流動化基本情報テーブルに対して、データ取得の制御構造（カーソル）を作成する
+
+##### e. d.で宣言した制御構造（カーソル）をオープンする
+
+##### f. e.でオープンした制御構造（カーソル）からデータ（以下、照合エラーデータ）を1行ずつ読み込み（フェッチ）して以下の処理を行う。取得件数分繰り返す。
+
+###### ① 照合エラーデータに対して項目名と値のデータ構造（以下、照合対象MAP）に変換する
+
+```java
+// ReconciliationItemProcessor.java内のメソッド
+private Map<String, Object> convertToReconciliationMap(ReconciliationError error) {
+    Map<String, Object> map = new HashMap<>();
+    map.put("投資家契約番号", error.getInvestorContractNo());
+    map.put("投資家契約再リース回数", error.getInvestorContractReleaseCount());
+    map.put("投資家会計処理区分", error.getInvestorAccountingCategory());
+    map.put("投資家契約履歴番号", error.getInvestorContractHistoryNo());
+    map.put("元_未実現利息総金額", error.getSourceUnrealizedInterestAmount());
+    map.put("先_未実現利息総金額", error.getTargetUnrealizedInterestAmount());
+    return map;
+}
+```
+
+###### ② 下記共通部品を呼び出し、照合エラーIDを取得する
+
+| #   | 取得データ     | 使用する部品                 | 引数                                        |
+|-----|----------------|------------------------------|---------------------------------------------|
+| 1   | 照合エラーID   | ZdリコンサイルZ差異判定処理  | f.の①で取得した照合対象MAP                  |
+|     |                |                              | bで取得したリコンサイル比較項目管理テーブル |
+
+```java
+// ReconciliationErrorIdGenerator.java
+public String generateReconciliationErrorId(Map<String, Object> reconciliationMap, 
+                                           List<ReconciliationItemCondition> conditions) {
+    // 照合エラーIDの生成ロジック
+    // ZdリコンサイルZ差異判定処理の実装
+    StringBuilder errorId = new StringBuilder("ERR_");
+    errorId.append(UUID.randomUUID().toString().substring(0, 8));
+    return errorId.toString();
+}
+```
+
+###### ③ ②で取得した照合エラーIDの内容を照合エラーテーブルに登録する
+
+```java
+// ReconciliationMapper.java内のメソッド
+@Insert("INSERT INTO 照合エラーテーブル " +
+        "(照合エラーID, プログラムID, 担当者コード, 投資家契約番号, 投資家契約再リース回数, " +
+        "投資家会計処理区分, 投資家契約履歴番号, 元_未実現利息総金額, 先_未実現利息総金額) " +
+        "VALUES (#{errorId}, #{programId}, #{operatorCode}, #{error.investorContractNo}, " +
+        "#{error.investorContractReleaseCount}, #{error.investorAccountingCategory}, " +
+        "#{error.investorContractHistoryNo}, #{error.sourceUnrealizedInterestAmount}, " +
+        "#{error.targetUnrealizedInterestAmount})")
+void insertReconciliationError(@Param("errorId") String errorId, 
+                             @Param("programId") String programId,
+                             @Param("operatorCode") String operatorCode,
+                             @Param("error") ReconciliationError error);
+```
+
+## 7. データ取得の概要イメージ
+
+### 7.1 内部一時表（WITH）
+
+```
+【1a.比較元データクエリ】             【1c.比較元完結合クエリ】             【2a.差分抽出クエリ(元)】             【2c.差分統合クエリ】
+・抽出対象                          ・抽出対象:                           ・抽出項目:                          ・抽出項目:
+  比較項目                            【1a.比較元データクエリ】               全項目                               差分元.投資家契約番号
+                                      【1b.比較先データクエリ】             ・抽出対象:                            差分元.投資家契約再リース回数
+【1b.比較先データクエリ】              完全外部結合（FULL OUTER JOIN）         【1a.比較元データクエリ】 比較元         差分元.投資家会計処理区分
+・抽出対象                                                               ・抽出条件:                            差分元.投資家契約履歴番号
+  比較項目                                                                 無し                               ・抽出対象:
+                                                                      ・集計条件:                             UNION
+                                                                        無し                                 ・抽出項目:
+                                                                      ・抽出順:                               差分先.投資家契約番号
+                                                                        無し                                  差分先.投資家契約再リース回数
+                                                                      MINUS                                  差分先.投資家会計処理区分
+                                   【2b.差分抽出クエリ(先)】                                                    差分先.投資家契約履歴番号
+                                   ・抽出項目:                          【3.照合データクエリ】
+                                     全項目                            ・抽出項目:
+                                   ・抽出対象:                           比較結合.投資家契約番号
+                                     【1b.比較先データクエリ】 比較先        比較結合.投資家契約再リース回数
+                                   ・抽出条件:                           比較結合.投資家会計処理区分
+                                     無し                               比較結合.投資家契約履歴番号
+                                   ・集計条件:                           比較結合.元_未実現利息総金額
+                                     無し                               比較結合.先_未実現利息総金額
+                                   ・抽出順:                           ・抽出対象:
+                                     無し                               【1c.比較元完結合クエリ】 比較結合
+                                   MINUS                               【2c.差分統合クエリ】 差分統合
+                                                                        結合条件:（内部結合）
+```
+
+## 8. クラス構成
+
+### 8.1 モデルクラス
+
+#### 8.1.1 ReconciliationError
+
+照合エラーデータを表すモデルクラス
+
+```java
+package com.example.reconciliation.model;
+
+import java.math.BigDecimal;
+
+public class ReconciliationError {
+    private String investorContractNo;           // 投資家契約番号
+    private int investorContractReleaseCount;    // 投資家契約再リース回数
+    private String investorAccountingCategory;   // 投資家会計処理区分
+    private String investorContractHistoryNo;    // 投資家契約履歴番号
+    private BigDecimal sourceUnrealizedInterestAmount;  // 元_未実現利息総金額
+    private BigDecimal targetUnrealizedInterestAmount;  // 先_未実現利息総金額
+    private String reconciliationErrorId;        // 照合エラーID
+    
+    // getter/setterメソッド
+}
+```
+
+#### 8.1.2 ReconciliationItemCondition
+
+リコンサイル比較項目管理テーブルのデータを表すモデルクラス
+
+```java
+package com.example.reconciliation.model;
+
+public class ReconciliationItemCondition {
+    private String itemCode;    // 項目コード
+    private String itemName;    // 項目名
+    
+    // getter/setterメソッド
+}
+```
+
+### 8.2 MyBatisマッパー
+
+#### 8.2.1 ReconciliationMapper
+
+データベースアクセスを行うマッパーインターフェース
+
+```java
+package com.example.reconciliation.mapper;
+
+import java.util.List;
+import org.apache.ibatis.annotations.Delete;
+import org.apache.ibatis.annotations.Insert;
+import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
+
+import com.example.reconciliation.model.ReconciliationError;
+import com.example.reconciliation.model.ReconciliationItemCondition;
+
+@Mapper
+public interface ReconciliationMapper {
+    // リコンサイル比較項目管理テーブルを取得
+    @Select("SELECT item_code, item_name FROM リコンサイル比較項目管理テーブル WHERE program_id = #{programId}")
+    List<ReconciliationItemCondition> getReconciliationItemConditions(@Param("programId") String programId);
+    
+    // 照合エラーテーブルの既存データを削除
+    @Delete("DELETE FROM 照合エラーテーブル WHERE プログラムID = #{programId}")
+    int deleteReconciliationErrorsByProgramId(@Param("programId") String programId);
+    
+    // 照合エラーデータを登録
+    @Insert("INSERT INTO 照合エラーテーブル " +
+            "(照合エラーID, プログラムID, 担当者コード, 投資家契約番号, 投資家契約再リース回数, " +
+            "投資家会計処理区分, 投資家契約履歴番号, 元_未実現利息総金額, 先_未実現利息総金額) " +
+            "VALUES (#{errorId}, #{programId}, #{operatorCode}, #{error.investorContractNo}, " +
+            "#{error.investorContractReleaseCount}, #{error.investorAccountingCategory}, " +
+            "#{error.investorContractHistoryNo}, #{error.sourceUnrealizedInterestAmount}, " +
+            "#{error.targetUnrealizedInterestAmount})")
+    void insertReconciliationError(@Param("errorId") String errorId, 
+                                 @Param("programId") String programId,
+                                 @Param("operatorCode") String operatorCode,
+                                 @Param("error") ReconciliationError error);
+    
+    // 照合エラー件数を取得
+    @Select("SELECT COUNT(*) FROM 照合エラーテーブル WHERE プログラムID = #{programId}")
+    int countReconciliationErrorsByProgramId(@Param("programId") String programId);
+}
+```
+
+### 8.3 Spring Batchコンポーネント
+
+#### 8.3.1 BatchConfiguration
+
+バッチ処理の設定クラス
+
+```java
+package com.example.reconciliation.config;
+
+import javax.sql.DataSource;
+import org.springframework.batch.core.Job;
+import org.springframework.batch.core.Step;
+import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
+import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
+import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
+import org.springframework.batch.core.launch.support.RunIdIncrementer;
+import org.springframework.batch.item.database.JdbcCursorItemReader;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+
+import com.example.reconciliation.listener.JobCompletionNotificationListener;
+import com.example.reconciliation.model.ReconciliationError;
+import com.example.reconciliation.processor.ReconciliationItemProcessor;
+import com.example.reconciliation.writer.ReconciliationItemWriter;
+
+@Configuration
+@EnableBatchProcessing
+public class BatchConfiguration {
+    // Spring Batchのジョブとステップの設定
+}
+```
+
+#### 8.3.2 ReconciliationItemProcessor
+
+照合エラーデータを処理するプロセッサ
+
+```java
+package com.example.reconciliation.processor;
+
+import org.springframework.batch.item.ItemProcessor;
+import org.springframework.beans.factory.annotation.Autowired;
+import com.example.reconciliation.model.ReconciliationError;
+import com.example.reconciliation.service.ReconciliationErrorIdGenerator;
+
+public class ReconciliationItemProcessor implements ItemProcessor<ReconciliationError, ReconciliationError> {
+    @Autowired
+    private ReconciliationErrorIdGenerator errorIdGenerator;
+    
+    @Override
+    public ReconciliationError process(ReconciliationError error) throws Exception {
+        // 照合エラーIDを生成して設定
+        String errorId = errorIdGenerator.generateReconciliationErrorId(
+            convertToReconciliationMap(error), 
+            null // リコンサイル比較項目管理テーブルのデータは別途取得
+        );
+        error.setReconciliationErrorId(errorId);
+        return error;
+    }
+    
+    private Map<String, Object> convertToReconciliationMap(ReconciliationError error) {
+        // ReconciliationErrorをMapに変換するロジック
+        Map<String, Object> map = new HashMap<>();
+        map.put("投資家契約番号", error.getInvestorContractNo());
+        map.put("投資家契約再リース回数", error.getInvestorContractReleaseCount());
+        map.put("投資家会計処理区分", error.getInvestorAccountingCategory());
+        map.put("投資家契約履歴番号", error.getInvestorContractHistoryNo());
+        map.put("元_未実現利息総金額", error.getSourceUnrealizedInterestAmount());
+        map.put("先_未実現利息総金額", error.getTargetUnrealizedInterestAmount());
+        return map;
+    }
+}
+```
+
+#### 8.3.3 ReconciliationItemWriter
+
+照合エラーデータをデータベースに書き込むライター
+
+```java
+package com.example.reconciliation.writer;
+
+import java.util.List;
+import org.springframework.batch.item.ItemWriter;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.example.reconciliation.mapper.ReconciliationMapper;
+import com.example.reconciliation.model.ReconciliationError;
+
+@Component
+public class ReconciliationItemWriter implements ItemWriter<ReconciliationError> {
+    @Autowired
+    private ReconciliationMapper reconciliationMapper;
+    
+    @Value("${reconciliation.program.id}")
+    private String programId;
+    
+    @Value("${reconciliation.operator.code:''}")
+    private String operatorCode;
+    
+    @Override
+    public void write(List<? extends ReconciliationError> items) throws Exception {
+        for (ReconciliationError error : items) {
+            reconciliationMapper.insertReconciliationError(
+                error.getReconciliationErrorId(),
+                programId,
+                operatorCode,
+                error
+            );
+        }
+    }
+}
+```
+
+#### 8.3.4 JobCompletionNotificationListener
+
+ジョブ完了時の処理を行うリスナー
+
+```java
+package com.example.reconciliation.listener;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.batch.core.BatchStatus;
+import org.springframework.batch.core.JobExecution;
+import org.springframework.batch.core.listener.JobExecutionListenerSupport;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+
+import com.example.reconciliation.mapper.ReconciliationMapper;
+
+@Component
+public class JobCompletionNotificationListener extends JobExecutionListenerSupport {
+    private static final Logger log = LoggerFactory.getLogger(JobCompletionNotificationListener.class);
+    
+    @Autowired
+    private ReconciliationMapper reconciliationMapper;
+    
+    @Value("${reconciliation.program.id}")
+    private String programId;
+    
+    @Override
+    public void afterJob(JobExecution jobExecution) {
+        if (jobExecution.getStatus() == BatchStatus.COMPLETED) {
+            log.info("!!! ジョブ完了! 結果を確認します");
+            
+            int errorCount = reconciliationMapper.countReconciliationErrorsByProgramId(programId);
+            log.info("照合エラー件数: {}", errorCount);
+        }
+    }
+}
+```
+
+### 8.4 サービスクラス
+
+#### 8.4.1 ReconciliationErrorIdGenerator
+
+照合エラーIDを生成するサービスクラス
+
+```java
+package com.example.reconciliation.service;
+
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+import org.springframework.stereotype.Service;
+
+import com.example.reconciliation.model.ReconciliationItemCondition;
+
+@Service
+public class ReconciliationErrorIdGenerator {
+    public String generateReconciliationErrorId(Map<String, Object> reconciliationMap, 
+                                               List<ReconciliationItemCondition> conditions) {
+        // 照合エラーIDの生成ロジック
+        // ZdリコンサイルZ差異判定処理の実装
+        StringBuilder errorId = new StringBuilder("ERR_");
+        errorId.append(UUID.randomUUID().toString().substring(0, 8));
+        return errorId.toString();
+    }
+}
+```
+
+## 9. SQLクエリ詳細
+
+### 9.1 照合エラーデータ抽出SQL
+
+```sql
+WITH 
+-- 1a. 比較元データクエリ
+COMP_SOURCE AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        未実現利息総金額
+    FROM
+        流動化契約基本
+),
+
+-- 1b. 比較先データクエリ
+COMP_TARGET AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号,
+        未実現利息ＯＭ付随総金額 + 未実現利息ＯＭ利息総金額 AS 未実現利息総金額
+    FROM
+        流動化契約基本
+),
+
+-- 1c. 比較元完結合クエリ (FULL OUTER JOIN)
+FULL_OUTER_JOIN_RESULT AS (
+    SELECT
+        NVL(s.投資家契約番号, t.投資家契約番号) AS 投資家契約番号,
+        NVL(s.投資家契約再リース回数, t.投資家契約再リース回数) AS 投資家契約再リース回数,
+        NVL(s.投資家会計処理区分, t.投資家会計処理区分) AS 投資家会計処理区分,
+        NVL(s.投資家契約履歴番号, t.投資家契約履歴番号) AS 投資家契約履歴番号,
+        s.未実現利息総金額 AS 元_未実現利息総金額,
+        t.未実現利息総金額 AS 先_未実現利息総金額
+    FROM
+        COMP_SOURCE s
+        FULL OUTER JOIN COMP_TARGET t
+        ON  s.投資家契約番号 = t.投資家契約番号
+        AND s.投資家契約再リース回数 = t.投資家契約再リース回数
+        AND s.投資家会計処理区分 = t.投資家会計処理区分
+        AND s.投資家契約履歴番号 = t.投資家契約履歴番号
+),
+
+-- 2a. 差分抽出クエリ(元) - MINUS操作
+DIFF_SOURCE AS (
+    SELECT *
+    FROM COMP_SOURCE
+    MINUS
+    SELECT *
+    FROM COMP_TARGET
+),
+
+-- 2b. 差分抽出クエリ(先) - MINUS操作
+DIFF_TARGET AS (
+    SELECT *
+    FROM COMP_TARGET
+    MINUS
+    SELECT *
+    FROM COMP_SOURCE
+),
+
+-- 2c. 差分統合クエリ - UNION操作
+DIFF_UNION AS (
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号
+    FROM DIFF_SOURCE
+    UNION
+    SELECT
+        投資家契約番号,
+        投資家契約再リース回数,
+        投資家会計処理区分,
+        投資家契約履歴番号
+    FROM DIFF_TARGET
+)
+
+-- 3. 照合データクエリ - INNER JOIN操作
+SELECT
+    f.投資家契約番号,
+    f.投資家契約再リース回数,
+    f.投資家会計処理区分,
+    f.投資家契約履歴番号,
+    f.元_未実現利息総金額 AS A_未実現利息総金額,
+    f.先_未実現利息総金額 AS B_未実現利息総金額
+FROM
+    FULL_OUTER_JOIN_RESULT f
+    INNER JOIN DIFF_UNION d
+    ON  f.投資家契約番号 = d.投資家契約番号
+    AND f.投資家契約再リース回数 = d.投資家契約再リース回数
+    AND f.投資家会計処理区分 = d.投資家会計処理区分
+    AND f.投資家契約履歴番号 = d.投資家契約履歴番号
+ORDER BY
+    f.投資家契約番号 ASC,
+    f.投資家契約再リース回数 ASC,
+    f.投資家会計処理区分 ASC,
+    f.投資家契約履歴番号 ASC
+```
+
+## 10. テスト仕様
+
+### 10.1 単体テスト
+
+| No. | テスト項目                          | 入力条件                                 | 期待結果                                       |
+|-----|-------------------------------------|------------------------------------------|-------------------------------------------------|
+| 1   | 照合エラーID生成機能                | 照合対象MAP、比較項目条件                | 正しい形式の照合エラーIDが生成されること       |
+| 2   | 照合エラーデータ抽出機能            | テストデータを含む流動化契約基本テーブル | 差異のあるデータが正しく抽出されること         |
+| 3   | 照合エラーデータ登録機能            | 照合エラーデータ                         | データが照合エラーテーブルに正しく登録されること |
+| 4   | リコンサイル比較項目管理テーブル取得機能 | プログラムID                       | 対応する比較項目が取得できること               |
+| 5   | 既存照合エラーデータ削除機能        | プログラムID                             | 既存データが正しく削除されること               |
+
+### 10.2 結合テスト
+
+| No. | テスト項目                      | 入力条件                                     | 期待結果                                     |
+|-----|---------------------------------|----------------------------------------------|----------------------------------------------|
+| 1   | バッチ処理全体の実行            | テストデータを含むテーブル群                 | 照合エラーデータが正しく抽出・登録されること |
+| 2   | パフォーマンステスト            | 大量データ（1万件以上）                      | 処理時間が許容範囲内であること               |
+| 3   | 例外発生時の処理                | データベース接続エラーなどの例外状況         | 適切なエラーログが出力され、処理が中断されること |
+
+## 11. 補足資料
+
+- 補足資料」シートを参照
+- 標準仕様シートを参照
 
 
 
